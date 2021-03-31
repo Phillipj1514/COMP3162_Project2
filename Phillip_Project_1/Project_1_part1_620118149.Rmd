@@ -1,0 +1,803 @@
+---
+title: "Project_1_part1_620118149"
+author: '620118149'
+date: "3/9/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(knitr)
+library(rtweet)
+library(SnowballC)
+library(syuzhet)
+
+```
+
+```{r,  include=FALSE}
+# Connect Rtweet to Twitter developer app
+#create_token(app = "COMP3162_lab3",
+#consumer_key = "j11smT206QM8p9rAKVC9Mrwls", consumer_secret = "nEoa9pN4iwFCgFOCkDnq2dBBuOamOkHNUmvgwH4YG6T1rimI8b",
+#access_token = "2759860218-pAvUfmgdbFCMawqk2Sj4RWfT6EcmYvv6a3HL0d2", access_secret = "ce9NCrf8sNl6S29XDlzqsGGJPE4QC1gkGcsHHenRH238W")
+```
+
+-------------------------------------------------------------------------------------
+
+# Project Overview
+A large entertainment & bar franchise (Hard Knocks) would like to determine whether now is a good time to expand and which country/region of the world is best to open next. Ultimately, they would like to gain some insights on whether to open their next franchise , based on public sentiments generally and opportunities to maximize profits. They first want to test the pulse of persons in relation to the products they sell (beers) which would indicate the current public views towards these products. In addition, they have a large dataset with sales data by region and country for different types of consumer goods (household, cosmetics etc), food and beer You will be helping Hard Knocks to make their decision in this project!
+
+--------------------------------------------------------------------------------------
+
+**1. Between March 0 4 March 0 9 (max. 1 word per day) connect to twitter on two separate days and retrieve 8 ,000 or more tweets containing one of the words from a and one of the words from b (total 16 ,000 tweets Retrieve tweets for the word from a on a separate day from b. **
+a) "beer” or “beer” 
+b) "concert” or “concert”
+
+- Getting Tweets
+
+```{r}
+#tweet.beer.full <- search_tweets("beer",n=9000,include_rts = FALSE)
+#tweet.concert.full <- search_tweets("concert",n=9000,include_rts = FALSE)
+
+# load in the tweets that where retrieved
+
+tweets_data_names <- c("beverage_2021-03-10_phillip.csv", "beverage_2021-03-13_phillip.csv", "party_2021-03-10_phillip.csv", "party_2021-03-13_phillip.csv", "beer_2021-03-14_phillip.csv", "beer_2021-03-16_phillip.csv", "concert_2021-03-15_phillip.csv", "concert_2021-03-17_phillip.csv" )
+
+tweets_data_dirty_names <- c("beverage_dirty_2021-03-10_phillip.csv", "beverage_dirty_2021-03-13_phillip.csv", "party_dirty_2021-03-10_phillip.csv", "party_dirty_2021-03-13_phillip.csv", "beer_dirty_2021-03-14_phillip.csv", "beer_dirty_2021-03-16_phillip.csv","concert_dirty_2021-03-15_phillip.csv", "concert_dirty_2021-03-17_phillip.csv")
+
+#retrieve the dirty data for reprocessing
+
+bev1 <- read.csv(paste("Data/usable_data/beverage",tweets_data_dirty_names[1],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+bev2 <- read.csv(paste("Data/usable_data/beverage",tweets_data_dirty_names[2],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+party1 <- read.csv(paste("Data/usable_data/party",tweets_data_dirty_names[3],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+party2 <- read.csv(paste("Data/usable_data/party",tweets_data_dirty_names[4],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+beer1 <- read.csv(paste("Data/usable_data/beer",tweets_data_dirty_names[5],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+beer2 <- read.csv(paste("Data/usable_data/beer",tweets_data_dirty_names[6],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+con1 <- read.csv(paste("Data/usable_data/concert",tweets_data_dirty_names[7],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+con2 <- read.csv(paste("Data/usable_data/concert",tweets_data_dirty_names[8],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+```
+
+
+**2. For each set of tweets retrieved (a b above), retain the following features only: **
+text, screen_name, user_id, created_at, favourite_count, retweet_count, location, followers_count, friends_count,account_lang, lang.
+
+```{r}
+column.keep <- c("text", "screen_name", "user_id", "created_at", "favorite_count", "retweet_count", "location", "followers_count", "friends_count","account_lang", "lang")
+
+#tweet.beer = tweet.beer.full[column.keep]
+#tweet.concert = tweet.concert.full[column.keep]
+
+bev1.tweet = bev1[column.keep]
+
+bev2.tweet = bev2[column.keep]
+
+party1.tweet = party1[column.keep]
+
+party2.tweet = party2[column.keep]
+
+beer1.tweet = beer1[column.keep]
+
+beer2.tweet = beer2[column.keep]
+
+con1.tweet = con1[column.keep]
+
+con2.tweet = con2[column.keep]
+
+#The official data set was removed frombeing print bcause of unicode characters that are causing a issue
+
+#kable(bev1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[1], sep = " ",collapse = NULL) )
+#kable(bev2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[2], sep = " ",collapse = NULL) )
+#kable(party1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[3], sep = " ",collapse = NULL) )
+#kable(party2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[4], sep = " ",collapse = NULL) )
+#kable(beer1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[5], sep = " ",collapse = NULL) )
+#kable(beer2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[6], sep = " ",collapse = NULL) )
+#kable(con1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[7], sep = " ",collapse = NULL) )
+#kable(con2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[8], sep = " ",collapse = NULL) )
+```
+
+**Clean The tweets**
+
+```{r}
+bev1.tweet$text <- gsub("https.*","",bev1.tweet$text)
+bev1.tweet$text <- gsub("http.*","",bev1.tweet$text)
+bev1.tweet$text <- gsub("#.*","",bev1.tweet$text)
+bev1.tweet$text <- gsub("@.*","",bev1.tweet$text)
+bev1.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",bev1.tweet$text)
+bev1.tweet$text <- gsub("U00..","",bev1.tweet$text)
+bev1.tweet$text <- gsub("[^\x20-\x7E]","",bev1.tweet$text)
+
+bev2.tweet$text <- gsub("https.*","",bev2.tweet$text)
+bev2.tweet$text <- gsub("http.*","",bev2.tweet$text)
+bev2.tweet$text <- gsub("#.*","",bev2.tweet$text)
+bev2.tweet$text <- gsub("@.*","",bev2.tweet$text)
+bev2.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",bev2.tweet$text)
+bev2.tweet$text <- gsub("U00..","",bev2.tweet$text)
+bev2.tweet$text <- gsub("[^\x20-\x7E]","",bev2.tweet$text)
+
+
+party1.tweet$text <- gsub("https.*","",party1.tweet$text)
+party1.tweet$text <- gsub("http.*","",party1.tweet$text)
+party1.tweet$text <- gsub("#.*","",party1.tweet$text)
+party1.tweet$text <- gsub("@.*","",party1.tweet$text)
+party1.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",party1.tweet$text)
+party1.tweet$text <- gsub("U00..","",party1.tweet$text)
+party1.tweet$text <- gsub("[^\x20-\x7E]","",party1.tweet$text)
+
+
+party2.tweet$text <- gsub("https.*","",party2.tweet$text)
+party2.tweet$text <- gsub("http.*","",party2.tweet$text)
+party2.tweet$text <- gsub("#.*","",party2.tweet$text)
+party2.tweet$text <- gsub("@.*","",party2.tweet$text)
+party2.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",party2.tweet$text)
+party2.tweet$text <- gsub("U00..","",party2.tweet$text)
+party2.tweet$text <- gsub("[^\x20-\x7E]","",party2.tweet$text)
+
+
+beer1.tweet$text <- gsub("https.*","",beer1.tweet$text)
+beer1.tweet$text <- gsub("http.*","",beer1.tweet$text)
+beer1.tweet$text <- gsub("#.*","",beer1.tweet$text)
+beer1.tweet$text <- gsub("@.*","",beer1.tweet$text)
+beer1.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",beer1.tweet$text)
+beer1.tweet$text <- gsub("U00..","",beer1.tweet$text)
+beer1.tweet$text <- gsub("[^\x20-\x7E]","",beer1.tweet$text)
+
+
+beer2.tweet$text <- gsub("https.*","",beer2.tweet$text)
+beer2.tweet$text <- gsub("http.*","",beer2.tweet$text)
+beer2.tweet$text <- gsub("#.*","",beer2.tweet$text)
+beer2.tweet$text <- gsub("@.*","",beer2.tweet$text)
+beer2.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",beer2.tweet$text)
+beer2.tweet$text <- gsub("U00..","",beer2.tweet$text)
+beer2.tweet$text <- gsub("[^\x20-\x7E]","",beer2.tweet$text)
+
+
+con1.tweet$text <- gsub("https.*","",con1.tweet$text)
+con1.tweet$text <- gsub("http.*","",con1.tweet$text)
+con1.tweet$text <- gsub("#.*","",con1.tweet$text)
+con1.tweet$text <- gsub("@.*","",con1.tweet$text)
+con1.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",con1.tweet$text)
+con1.tweet$text <- gsub("U00..","",con1.tweet$text)
+con1.tweet$text <- gsub("[^\x20-\x7E]","",con1.tweet$text)
+
+
+con2.tweet$text <- gsub("https.*","",con2.tweet$text)
+con2.tweet$text <- gsub("http.*","",con2.tweet$text)
+con2.tweet$text <- gsub("#.*","",con2.tweet$text)
+con2.tweet$text <- gsub("@.*","",con2.tweet$text)
+con2.tweet$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","",con2.tweet$text)
+con2.tweet$text <- gsub("U00..","",con2.tweet$text)
+con2.tweet$text <- gsub("[^\x20-\x7E]","",con2.tweet$text)
+
+
+```
+
+* - The tables after the changes are made **
+```{r echo=FALSE}
+kable(bev1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[1], sep = " ",collapse = NULL) )
+kable(bev2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[2], sep = " ",collapse = NULL) )
+kable(party1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[3], sep = " ",collapse = NULL) )
+kable(party2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[4], sep = " ",collapse = NULL) )
+kable(beer1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[5], sep = " ",collapse = NULL) )
+kable(beer2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[6], sep = " ",collapse = NULL) )
+kable(con1.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[7], sep = " ",collapse = NULL) )
+kable(con2.tweet[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[8], sep = " ",collapse = NULL) )
+```
+
+a) Remove all non English tweets (you must indicate how many tweets were removed).
+
+
+```{r}
+# create subset of english only tweet
+
+#tweet.beer.english = subset(tweet.beer, tweet.beer$lang == "en")
+#tweet.concert.english = subset(tweet.concert, tweet.concert$lang == "en")
+
+#sprintf("The number of beer tweets that were removed are %d", nrow(tweet.beer)- nrow(tweet.beer.english))
+#sprintf("The number of concert tweets that were removed are %d", nrow(tweet.concert)- nrow(tweet.concert.english))
+
+bev1.tweet.clean = subset(bev1.tweet, bev1.tweet$lang=="en");
+bev2.tweet.clean = subset(bev2.tweet, bev2.tweet$lang=="en");
+party1.tweet.clean = subset(party1.tweet, party1.tweet$lang=="en");
+party2.tweet.clean = subset(party2.tweet, party2.tweet$lang=="en");
+beer1.tweet.clean = subset(beer1.tweet, beer1.tweet$lang=="en");
+beer2.tweet.clean = subset(beer2.tweet, beer2.tweet$lang=="en");
+con1.tweet.clean = subset(con1.tweet, con1.tweet$lang=="en");
+con2.tweet.clean = subset(con2.tweet, con2.tweet$lang=="en");
+
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[1],":", nrow(bev1.tweet)- nrow(bev1.tweet.clean), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[2],":", nrow(bev2.tweet)- nrow(bev2.tweet.clean), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[3],":", nrow(party1.tweet)- nrow(party1.tweet.clean), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[4],":", nrow(party2.tweet)- nrow(party2.tweet.clean), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[5],":", nrow(beer1.tweet)- nrow(beer1.tweet.clean), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[6],":", nrow(beer2.tweet)- nrow(beer2.tweet.clean), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[7],":", nrow(con1.tweet)- nrow(con1.tweet.clean), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[8],":", nrow(con2.tweet)- nrow(con2.tweet.clean), sep = " ",collapse = NULL))
+```
+
+b) A tweet is considered a duplicate if the text is the same as another tweet. Remove all duplicate tweets(you must indicate how many tweets were removed)
+
+```{r}
+
+#tweet.beer.english.unique = subset(tweet.beer.english, !duplicated(tweet.beer.english$text) )
+#tweet.concert.english.unique = subset(tweet.concert.english,  !duplicated(tweet.concert.english$text) )  
+
+#sprintf("The number of duplicate beer tweets that were removed are %d", nrow(tweet.beer.english)- nrow(tweet.beer.english.unique))
+#sprintf("The number of duplicate concert tweets that were removed are %d", nrow(tweet.concert.english)- nrow(tweet.concert.english.unique))
+
+bev1.tweet.clean.unique = subset(bev1.tweet.clean, !duplicated(bev1.tweet.clean$text))
+bev2.tweet.clean.unique = subset(bev1.tweet.clean, !duplicated(bev1.tweet.clean$text))
+party1.tweet.clean.unique = subset(party1.tweet.clean, !duplicated(party1.tweet.clean$text))
+party2.tweet.clean.unique = subset(party2.tweet.clean, !duplicated(party2.tweet.clean$text))
+beer1.tweet.clean.unique = subset(beer1.tweet.clean, !duplicated(beer1.tweet.clean$text))
+beer2.tweet.clean.unique = subset(beer2.tweet.clean, !duplicated(beer2.tweet.clean$text))
+con1.tweet.clean.unique = subset(con1.tweet.clean, !duplicated(con1.tweet.clean$text))
+con2.tweet.clean.unique = subset(con2.tweet.clean, !duplicated(con2.tweet.clean$text))
+
+
+
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[1],":", nrow(bev1.tweet.clean)- nrow(bev1.tweet.clean.unique), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[2],":", nrow(bev2.tweet.clean)- nrow(bev2.tweet.clean.unique), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[3],":", nrow(party1.tweet.clean)- nrow(party1.tweet.clean.unique), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[4],":", nrow(party2.tweet.clean)- nrow(party2.tweet.clean.unique), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[5],":", nrow(beer1.tweet.clean)- nrow(beer1.tweet.clean.unique), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[6],":", nrow(beer2.tweet.clean)- nrow(beer2.tweet.clean.unique), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[7],":", nrow(con1.tweet.clean)- nrow(con1.tweet.clean.unique), sep = " ",collapse = NULL))
+print(paste("The number of tweets that were removed for", tweets_data_dirty_names[8],":", nrow(con2.tweet.clean)- nrow(con2.tweet.clean.unique), sep = " ",collapse = NULL))
+```
+
+** - The tables after the changes are made **
+```{r echo=FALSE}
+kable(bev1.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[1], sep = " ",collapse = NULL) )
+kable(bev2.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[2], sep = " ",collapse = NULL) )
+kable(party1.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[3], sep = " ",collapse = NULL) )
+kable(party2.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[4], sep = " ",collapse = NULL) )
+kable(beer1.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[5], sep = " ",collapse = NULL) )
+kable(beer2.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[6], sep = " ",collapse = NULL) )
+kable(con1.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[7], sep = " ",collapse = NULL) )
+kable(con2.tweet.clean.unique[5:8,1:4], caption = paste("Beverage","table summary with date", tweets_data_dirty_names[8], sep = " ",collapse = NULL) )
+```
+
+
+
+
+c) Write the remainin g tweets data to a file (.csv). The csv filename should have the format <keyword>_<date>_<myname>. For example, for tweets on b everage ” retrieved on March 07 by Anderson would be: b e verage _202 1 Mar07_Anderson.csv
+
+```{r}
+#cdate = as.Date(Sys.time())
+
+#write.csv(tweet.beer.english.unique,paste("beer",cdate,"phillip.csv",sep = "_",collapse = NULL), row.names = F)
+#write.csv(tweet.beer,paste("beer_dirty",cdate,"phillip.csv",sep = "_",collapse = NULL), row.names = F)
+
+#write.csv(tweet.beer.english.unique,paste("concert",cdate,"phillip.csv",sep = "_",collapse = NULL), row.names = F)
+#write.csv(tweet.beer,paste("concert_dirty",cdate,"phillip.csv",sep = "_",collapse = NULL), row.names = F)
+
+write.csv(bev1.tweet.clean.unique,tweets_data_names[1], row.names = F)
+write.csv(bev2.tweet.clean.unique,tweets_data_names[2], row.names = F)
+write.csv(party1.tweet.clean.unique,tweets_data_names[3], row.names = F)
+write.csv(party2.tweet.clean.unique,tweets_data_names[4], row.names = F)
+write.csv(beer1.tweet.clean.unique,tweets_data_names[5], row.names = F)
+write.csv(beer2.tweet.clean.unique,tweets_data_names[6], row.names = F)
+write.csv(con1.tweet.clean.unique,tweets_data_names[7], row.names = F)
+write.csv(con2.tweet.clean.unique,tweets_data_names[8], row.names = F)
+```
+
+d) Write code to review and s how details of tweets retrieved including number of tweets (after doi ng 2 a c)c), screen_name with the most followers, tweet with the most retweets, location from which the most tweets originate.
+
+
+```{r}
+#save the  data frames into another variable just incase modifiaction is needed
+#tweet.beer.summary <- tweet.beer.english.unique
+#tweet.concert.summary <- tweet.concert.english.unique
+
+#print("beer Summary")
+#print("-------------------------------------------------")
+#print(paste("The number of Twets retrieved are: ", nrow(tweet.beer.summary)))
+
+#print(paste("The user with the most followers: ", 
+#            unname(
+#              tweet.beer.summary[
+#                max(tweet.beer.summary$followers_count)==tweet.beer.summary$followers_count                     
+#                ,"screen_name"
+#                ]
+#              ) 
+#            )
+#      )
+
+#print(paste("The tweets with the most retweet: ", 
+#            unname(
+#              tweet.beer.summary[
+#                max(tweet.beer.summary$retweet_count)==tweet.beer.summary$retweet_count                     
+#                ,"text"
+#                ]
+#              ) 
+#            )
+#      )
+
+
+# count the number occurances for each location
+#beers_location_count <- table(tweet.beer.summary$location)
+#beers_location_count <- as.data.frame(beers_location_count)
+
+# remove empty location row
+#beers_location_count <- subset(beers_location_count, beers_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+#print(paste("The location with the most tweets: ", 
+#            unname(
+#              beers_location_count[
+#                max(beers_location_count$Freq)==beers_location_count$Freq                     
+#                ,"Var1"
+#                ]
+#              ) 
+#            )
+#      )
+
+#print("-------------------------------------------------")
+
+#print("")
+#print("concert Summary")
+#print("-------------------------------------------------")
+#print(paste("The number of Twets retrieved are: ", nrow(tweet.concert.summary)))
+
+#print(paste("The user with the most followers: ", 
+#            unname(
+#              tweet.concert.summary[
+#                max(tweet.concert.summary$followers_count)==tweet.concert.summary$followers_count                     
+#                ,"screen_name"
+#                ]
+#              ) 
+#            )
+#      )
+
+#print(paste("The tweets with the most retweet: ", 
+#            unname(
+#              tweet.concert.summary[
+#                max(tweet.concert.summary$retweet_count)==tweet.concert.summary$retweet_count                     
+#                ,"text"
+#                ]
+#              ) 
+#            )
+#      )
+
+
+# count the number occurances for each location
+#concert_location_count <- table(tweet.concert.summary$location)
+#concert_location_count <- as.data.frame(concert_location_count)
+
+# remove empty location row
+#concert_location_count <- subset(concert_location_count, concert_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+#print(paste("The location with the most tweets: ", 
+#            unname(
+#              concert_location_count[
+#                max(concert_location_count$Freq)==concert_location_count$Freq                     
+#                ,"Var1"
+#                ]
+#              ) 
+#            )
+#      )
+
+#print("-------------------------------------------------")
+```
+
+
+```{r}
+bev1.summary <- bev1.tweet.clean.unique
+
+print(paste(tweets_data_names[1],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(bev1.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              bev1.summary[
+                max(bev1.summary$followers_count)==bev1.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              bev1.summary[
+                max(bev1.summary$retweet_count)==bev1.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+bev1_location_count <- table(bev1.summary$location)
+bev1_location_count <- as.data.frame(bev1_location_count)
+
+# remove empty location row
+bev1_location_count <- subset(bev1_location_count, bev1_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              bev1_location_count[
+                max(bev1_location_count$Freq)==bev1_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+
+bev2.summary <- bev2.tweet.clean.unique
+
+print(paste(tweets_data_names[2],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(bev2.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              bev2.summary[
+                max(bev2.summary$followers_count)==bev2.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              bev2.summary[
+                max(bev2.summary$retweet_count)==bev2.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+bev2_location_count <- table(bev2.summary$location)
+bev2_location_count <- as.data.frame(bev2_location_count)
+
+# remove empty location row
+bev2_location_count <- subset(bev2_location_count, bev2_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              bev2_location_count[
+                max(bev2_location_count$Freq)==bev2_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+
+party1.summary <- party1.tweet.clean.unique
+
+print(paste(tweets_data_names[3],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(party1.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              party1.summary[
+                max(party1.summary$followers_count)==party1.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              party1.summary[
+                max(party1.summary$retweet_count)==party1.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+party1_location_count <- table(party1.summary$location)
+party1_location_count <- as.data.frame(party1_location_count)
+
+# remove empty location row
+party1_location_count <- subset(party1_location_count, party1_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              party1_location_count[
+                max(party1_location_count$Freq)==party1_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+
+party2.summary <- party2.tweet.clean.unique
+
+print(paste(tweets_data_names[4],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(party2.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              party2.summary[
+                max(party2.summary$followers_count)==party2.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              party2.summary[
+                max(party2.summary$retweet_count)==party2.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+party2_location_count <- table(party2.summary$location)
+party2_location_count <- as.data.frame(party2_location_count)
+
+# remove empty location row
+party2_location_count <- subset(party2_location_count, party2_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              party2_location_count[
+                max(party2_location_count$Freq)==party2_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+
+
+beer1.summary <- beer1.tweet.clean.unique
+
+print(paste(tweets_data_names[5],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(beer1.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              beer1.summary[
+                max(beer1.summary$followers_count)==beer1.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              beer1.summary[
+                max(beer1.summary$retweet_count)==beer1.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+beer1_location_count <- table(beer1.summary$location)
+beer1_location_count <- as.data.frame(beer1_location_count)
+
+# remove empty location row
+beer1_location_count <- subset(beer1_location_count, beer1_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              beer1_location_count[
+                max(beer1_location_count$Freq)==beer1_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+
+
+beer2.summary <- beer2.tweet.clean.unique
+
+print(paste(tweets_data_names[6],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(beer2.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              beer2.summary[
+                max(beer2.summary$followers_count)==beer2.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              beer2.summary[
+                max(beer2.summary$retweet_count)==beer2.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+beer2_location_count <- table(beer2.summary$location)
+beer2_location_count <- as.data.frame(beer2_location_count)
+
+# remove empty location row
+beer2_location_count <- subset(beer2_location_count, beer2_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              beer2_location_count[
+                max(beer2_location_count$Freq)==beer2_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+
+
+con1.summary <- con1.tweet.clean.unique
+
+print(paste(tweets_data_names[7],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(con1.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              con1.summary[
+                max(con1.summary$followers_count)==con1.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              con1.summary[
+                max(con1.summary$retweet_count)==con1.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+con1_location_count <- table(con1.summary$location)
+con1_location_count <- as.data.frame(con1_location_count)
+
+# remove empty location row
+con1_location_count <- subset(con1_location_count, con1_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              con1_location_count[
+                max(con1_location_count$Freq)==con1_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+
+
+con2.summary <- con2.tweet.clean.unique
+
+print(paste(tweets_data_names[8],"Summary", sep = " ",collapse = NULL))
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", nrow(con2.summary)))
+
+print(paste("The user with the most followers: ", 
+            unname(
+              con2.summary[
+                max(con2.summary$followers_count)==con2.summary$followers_count                     
+                ,"screen_name"
+                ]
+              ) 
+            )
+      )
+
+print(paste("The tweets with the most retweet: ", 
+            unname(
+              con2.summary[
+                max(con2.summary$retweet_count)==con2.summary$retweet_count                     
+                ,"text"
+                ]
+              ) 
+            )
+      )
+
+
+# count the number occurances for each location
+con2_location_count <- table(con2.summary$location)
+con2_location_count <- as.data.frame(con2_location_count)
+
+# remove empty location row
+con2_location_count <- subset(con2_location_count, con2_location_count$Var1 != "")
+
+#print the location with the maximum occurrences
+print(paste("The location with the most tweets: ", 
+            unname(
+              con2_location_count[
+                max(con2_location_count$Freq)==con2_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+            )
+      )
+
+print("-------------------------------------------------")
+print("")
+print("")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
