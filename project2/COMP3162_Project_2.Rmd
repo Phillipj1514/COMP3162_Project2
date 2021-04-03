@@ -18,6 +18,37 @@ output: pdf_document
 
 a. Merge the tweets collected from project 01 by each person in the team. [1]
 ```{r}
+##Read Beverage Tweet CSV Files
+bev1_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+bev1_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+
+#Merge Beverage Tweet DataFrames
+bev1_anna$X <- NULL
+bev1_total <- merge(bev1_anna,bev1_phillip,by="user_id")
+
+##Read Concert Tweet CSV Files
+concert_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+concert_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+
+#Merge Concert Tweet DataFrames
+concert_anna$X <- NULL
+concert_total <- merge(concert_anna,concert_phillip,by="user_id")
+
+##Read Beer Tweet CSV Files
+beer_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+beer_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+
+#Merge Concert Tweet DataFrames
+beer_anna$X <- NULL
+beer_total <- merge(beer_anna,beer_phillip,by="user_id")
+
+##Read Party Tweet CSV Files
+party_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+party_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+
+#Merge Concert Tweet DataFrames
+party_anna$X <- NULL
+party_total <- merge(party_anna,party_phillip,by="user_id")
 
 ```
 
