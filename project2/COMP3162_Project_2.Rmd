@@ -11,7 +11,9 @@ library(dplyr)
 library(knitr)
 library(SnowballC)
 library(syuzhet)
-
+library(ggplot2)
+library(plotly)
+library(lubridate)
 ```
 
 # Project Part 02 – Teamwork
@@ -33,7 +35,7 @@ tweets_data_names <- c("beverage_2021-03-10_phillip.csv", "beverage_2021-03-13_p
 
 # load in files to variables
 
-#load Phillip data
+# load Phillip data
 
 phillip_beverage_1 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/beverage",tweets_data_names[1],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
 
@@ -518,6 +520,12 @@ print(paste("Concert : ", concert_loc_most_pos_sent))
 
 ## 2. Collect, Explore, Prepare Structured Data [20 marks]
 
+```{r, include=FALSE}
+# load consumer data
+consumer_data <- read.csv("consumer_pt02_2021.csv", stringsAsFactors = TRUE)
+```
+
+
 a. Download the datafile consumer_pt02_2021.csv from OurVLE
 ```{r}
 
@@ -553,44 +561,147 @@ d. Format/reformat the data as necessary. Please note that as you proceed throug
 ## 3. Structured Data Analysis/Modeling [35]
 
 Write code to conduct analysis that will answer the questions below. You are encouraged to use tables/graphs where necessary to visualize results. Additionally, your code should be shown along with each question, the result and notes that explain the results.
+
 a. What is the average spend on beverages in each country? [3]
 ```{r}
+data.consumer <- consumer_data
+data.consumer.bev <-  subset(data.consumer, data.consumer$X=="Beverages")
 
+data.consumer.bev <-  subset(data.consumer.bev, data.consumer.bev$Country!="k")
+
+
+consumer.countries <- table(data.consumer.bev$Country)
+consumer.countries <- as.data.frame(consumer.countries)
+
+consumer.countries <- subset(consumer.countries, consumer.countries$Var1!="k")
+
+consumer.countries$avg_spend <- c(0)
+
+
+for(i in 1:NROW(consumer.countries$Var1)){
+  country_name = toString(consumer.countries$Var1[i])
+  part_data = subset(data.consumer.bev, data.consumer.bev$Country==country_name)
+  consumer.countries$avg_spend[i] <- mean(as.numeric(part_data$Total.Cost))
+}
 ```
 
+```{r}
+hist(consumer.countries$avg_spend, col="orange")
+```
+
+```{r, echo=FALSE}
+kable(consumer.countries[1:4,1:3], caption = "Country and Avg Spend on beverages")
+```
 
 
 b. Which country has the highest spending on beverages? [2]
 ```{r}
+highest_spending <- data.consumer.bev$Country[match(max(as.numeric(data.consumer.bev$Total.Cost)), as.numeric(data.consumer.bev$Total.Cost))]
 
+print(paste("The country with the highest spending on beverages is: ", highest_spending))
 ```
-
 
 
 c. Which country consumes the most beverages? [2]
 ```{r}
+most_consume <- consumer.countries$Var1[match(max(consumer.countries$Freq), consumer.countries$Freq)]
 
+print(paste("The country that consumes the most beverage is : ", highest_spending))
 ```
 
 
 
 d. What is the average profit from the sale of beverages in each country? [3]
 ```{r}
+consumer.countries$avg_profit <- c(0)
 
+for(i in 1:NROW(consumer.countries$Var1)){
+  country_name = toString(consumer.countries$Var1[i])
+  part_data = subset(data.consumer.bev, data.consumer.bev$Country==country_name)
+  consumer.countries$avg_profit[i] <- mean(as.numeric(part_data$Total.Profit))
+}
 ```
 
+```{r}
+hist(consumer.countries$avg_profit, col="orange")
+```
+
+```{r, echo=FALSE}
+kable(consumer.countries[1:4,1:4], caption = "Country and avg profit on beverages")
+```
 
 
 e. What has been the total revenue from beverages for each year since 2014? [5]
 ```{r}
 
+# convert the order dates to years only
+data.consumer.bev.yearOnly <- data.consumer.bev
+
+
+data.consumer.bev.yearOnly$Order.Date <- as.integer(format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), format = "%Y"))
+
+bev_yearly_rev <- table(data.consumer.bev.yearOnly$Order.Date)
+bev_yearly_rev <- as.data.frame(bev_yearly_rev)
+
+bev_yearly_rev$revenue <- c(0)
+
+bev_yearly_rev <- subset(bev_yearly_rev, bev_yearly_rev$Var1 != 2013)
+bev_yearly_rev <- subset(bev_yearly_rev, bev_yearly_rev$Var1 != 2012)
+
+data = subset(data.consumer.bev.yearOnly, data.consumer.bev.yearOnly$Order.Date== bev_yearly_rev$Var1[1])
+
+# calculate the revenues
+for(i in 1:NROW(bev_yearly_rev$Var1)){
+  data = subset(data.consumer.bev.yearOnly, data.consumer.bev.yearOnly$Order.Date== bev_yearly_rev$Var1[i])
+  
+  bev_yearly_rev$revenue[i] <- sum(as.numeric(data$Total.Revenue))
+  
+}
+
 ```
 
-
+```{r}
+bev_yearly_rev %>% ggplot(aes(x=Var1,y=revenue)) +geom_point() 
+```
 
 
 f. Plot a time series graph showing change in overall revenues from beverages for the last six months (in the dataset). [4]
 ```{r}
+earliest_date <- max(as.integer(format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), "%Y%m%d")),  na.rm = TRUE)
+earliest_date <- as.Date(toString(earliest_date), "%Y%m%d")
+
+analysis_date <- earliest_date %m-% months(6)
+
+data.consumer.bev.filter <- filter(data.consumer.bev,(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") >= analysis_date ))
+
+data.consumer.bev.filter$rOrder.Date <- as.Date(data.consumer.bev.filter$Order.Date,"%m/%d/%Y")
+
+data.consumer.bev.filter$Total.Revenue.num <- as.numeric(data.consumer.bev.filter$Total.Revenue)
+
+data_monthly_rev <- data.frame(date = c(as.Date("2014-12-31")), revenue = c(0,0,0,0,0,0))
+
+
+# avg each month data 
+for(i in 1:6){
+  start_mth <- analysis_date %m+% months(i-1)
+  end_mth <- analysis_date %m+% months(i)
+  fil_data <- filter(data.consumer.bev,(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") >= start_mth & as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") < end_mth ))
+  avg_rev <- sum(as.integer(fil_data$Total.Revenue))
+  data_monthly_rev$date[i] <- start_mth
+  data_monthly_rev$revenue[i] <- avg_rev
+}
+data_monthly_rev
+
+
+```
+
+```{r}
+# The revenues for each day 
+plot(data.consumer.bev.filter$Total.Revenue.num~data.consumer.bev.filter$rOrder.Date,type="p", col="green")
+
+# Total revenue per month
+plot(data_monthly_rev$revenue~data_monthly_rev$date,type="l", col="green")
+
 
 ```
 
@@ -611,11 +722,10 @@ h. Determine whether beverages units sold is above the overall average for units
 
 
 
-
 i. In which season (Spring, Summer, Autumn, Winter) does persons spend the most on beverages? [6]
 ```{r}
-```
 
+```
 
 
 
