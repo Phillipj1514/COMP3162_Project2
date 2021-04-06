@@ -5,6 +5,17 @@ date: "3/30/2021"
 output: pdf_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(knitr)
+library(SnowballC)
+library(syuzhet)
+library(ggplot2)
+library(plotly)
+library(lubridate)
+```
+
 # Project Part 02 – Teamwork
 
 **(2 persons per team)**
@@ -25,59 +36,383 @@ library(ggplot2)
 ## 1. Tweet Data Analysis [20]
 
 a. Merge the tweets collected from project 01 by each person in the team. [1]
-```{r}
-##Read Beverage Tweet CSV Files
-bev1_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
-bev1_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
 
-#Merge Beverage Tweet DataFrames
-bev1_anna$X <- NULL
-bev1_total <- merge(bev1_anna,bev1_phillip,by="user_id")
+```{r include=FALSE}
+# The data files names
+tweets_data_names <- c("beverage_2021-03-10_phillip.csv", "beverage_2021-03-13_phillip.csv", "party_2021-03-10_phillip.csv", "party_2021-03-13_phillip.csv", "beer_2021-03-14_phillip.csv", "beer_2021-03-16_phillip.csv", "concert_2021-03-15_phillip.csv", "concert_2021-03-17_phillip.csv","beer_2021Mar16_Annabelle.csv", "beverage_2021Mar13_Annabelle.csv","concert_2021Mar14_Annabelle.csv","party_2021Mar17_Annabelle.csv")
 
-##Read Concert Tweet CSV Files
-concert_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
-concert_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+# load in files to variables
 
-#Merge Concert Tweet DataFrames
-concert_anna$X <- NULL
-concert_total <- merge(concert_anna,concert_phillip,by="user_id")
+# load Phillip data
 
-##Read Beer Tweet CSV Files
-beer_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
-beer_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+phillip_beverage_1 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/beverage",tweets_data_names[1],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
 
-#Merge Concert Tweet DataFrames
-beer_anna$X <- NULL
-beer_total <- merge(beer_anna,beer_phillip,by="user_id")
+phillip_beverage_2 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/beverage",tweets_data_names[2],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
 
-##Read Party Tweet CSV Files
-party_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
-party_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+phillip_party_1 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/party",tweets_data_names[3],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
 
-#Merge Concert Tweet DataFrames
-party_anna$X <- NULL
-party_total <- merge(party_anna,party_phillip,by="user_id")
+phillip_party_2 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/party",tweets_data_names[4],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+phillip_beer_1 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/beer",tweets_data_names[5],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+phillip_beer_2 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/beer",tweets_data_names[6],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+phillip_concert_1 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/concert",tweets_data_names[7],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+phillip_concert_2 <- read.csv(paste("../Phillip_Project_1/Data/usable_data/concert",tweets_data_names[8],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+# merge Phillip data
+
+phillip_beverage <- rbind(phillip_beverage_1, phillip_beverage_2)
+phillip_party <- rbind(phillip_party_1, phillip_party_2)
+phillip_concert <- rbind(phillip_concert_1, phillip_concert_2)
+phillip_beer <- rbind(phillip_beer_1, phillip_beer_2)
+
+
+# load Annabelle data  
+
+annabelle_beer <- read.csv(paste("../Annabelle_Project_1",tweets_data_names[9],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+annabelle_beverage <- read.csv(paste("../Annabelle_Project_1",tweets_data_names[10],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+annabelle_concert <- read.csv(paste("../Annabelle_Project_1",tweets_data_names[11],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
+
+annabelle_party <- read.csv(paste("../Annabelle_Project_1",tweets_data_names[12],sep = "/",collapse = NULL), stringsAsFactors = TRUE)
 
 ```
+
+```{r}
+tweet_beer <- rbind(phillip_beer, subset(annabelle_beer, select = -c(X)) )
+tweet_beverage <- rbind(phillip_beverage, subset(annabelle_beverage, select = -c(X)))
+tweet_concert <- rbind(phillip_concert, subset(annabelle_concert, select = -c(X)))
+tweet_party <- rbind(phillip_party, subset(annabelle_party, select = -c(X)))
+```
+
+
+- clean each dataframe again
+```{r}
+
+# clean the text
+
+tweet_beer.clean <- tweet_beer
+tweet_beer.clean$text <- gsub("https.*","", tweet_beer.clean$text)
+tweet_beer.clean$text <- gsub("http.*","", tweet_beer.clean$text)
+tweet_beer.clean$text <- gsub("#.*","", tweet_beer.clean$text)
+tweet_beer.clean$text <- gsub("@.*","", tweet_beer.clean$text)
+tweet_beer.clean$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_beer.clean$text)
+tweet_beer.clean$text <- gsub("U00..","", tweet_beer.clean$text)
+tweet_beer.clean$text <- gsub("[^\x20-\x7E]","", tweet_beer.clean$text)
+
+tweet_beverage.clean <- tweet_beverage
+tweet_beverage.clean$text <- gsub("https.*","", tweet_beverage.clean$text)
+tweet_beverage.clean$text <- gsub("http.*","", tweet_beverage.clean$text)
+tweet_beverage.clean$text <- gsub("#.*","", tweet_beverage.clean$text)
+tweet_beverage.clean$text <- gsub("@.*","", tweet_beverage.clean$text)
+tweet_beverage.clean$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_beverage.clean$text)
+tweet_beverage.clean$text <- gsub("U00..","", tweet_beverage.clean$text)
+tweet_beverage.clean$text <- gsub("[^\x20-\x7E]","", tweet_beverage.clean$text)
+
+tweet_concert.clean <- tweet_concert
+tweet_concert.clean$text <- gsub("https.*","", tweet_concert.clean$text)
+tweet_concert.clean$text <- gsub("http.*","", tweet_concert.clean$text)
+tweet_concert.clean$text <- gsub("#.*","", tweet_concert.clean$text)
+tweet_concert.clean$text <- gsub("@.*","", tweet_concert.clean$text)
+tweet_concert.clean$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_concert.clean$text)
+tweet_concert.clean$text <- gsub("U00..","", tweet_concert.clean$text)
+tweet_concert.clean$text <- gsub("[^\x20-\x7E]","", tweet_concert.clean$text)
+
+tweet_party.clean <- tweet_party
+tweet_party.clean$text <- gsub("https.*","", tweet_party.clean$text)
+tweet_party.clean$text <- gsub("http.*","", tweet_party.clean$text)
+tweet_party.clean$text <- gsub("#.*","", tweet_party.clean$text)
+tweet_party.clean$text <- gsub("@.*","", tweet_party.clean$text)
+tweet_party.clean$text <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_party.clean$text)
+tweet_party.clean$text <- gsub("U00..","", tweet_party.clean$text)
+tweet_party.clean$text <- gsub("[^\x20-\x7E]","", tweet_party.clean$text)
+
+# clean the locations
+
+tweet_beer.clean$location <- gsub("https.*","", tweet_beer.clean$location)
+tweet_beer.clean$location <- gsub("http.*","", tweet_beer.clean$location)
+tweet_beer.clean$location <- gsub("#.*","", tweet_beer.clean$location)
+tweet_beer.clean$location <- gsub("@.*","", tweet_beer.clean$location)
+tweet_beer.clean$location <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_beer.clean$location)
+tweet_beer.clean$location <- gsub("U00..","", tweet_beer.clean$location)
+tweet_beer.clean$location <- gsub("[^\x20-\x7E]","", tweet_beer.clean$location)
+
+tweet_beverage.clean$location <- gsub("https.*","", tweet_beverage.clean$location)
+tweet_beverage.clean$location <- gsub("http.*","", tweet_beverage.clean$location)
+tweet_beverage.clean$location <- gsub("#.*","", tweet_beverage.clean$location)
+tweet_beverage.clean$location <- gsub("@.*","", tweet_beverage.clean$location)
+tweet_beverage.clean$location <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_beverage.clean$location)
+tweet_beverage.clean$location <- gsub("U00..","", tweet_beverage.clean$location)
+tweet_beverage.clean$location <- gsub("[^\x20-\x7E]","", tweet_beverage.clean$location)
+
+tweet_concert.clean$location <- gsub("https.*","", tweet_concert.clean$location)
+tweet_concert.clean$location <- gsub("http.*","", tweet_concert.clean$location)
+tweet_concert.clean$location <- gsub("#.*","", tweet_concert.clean$location)
+tweet_concert.clean$location <- gsub("@.*","", tweet_concert.clean$location)
+tweet_concert.clean$location <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_concert.clean$location)
+tweet_concert.clean$location <- gsub("U00..","", tweet_concert.clean$location)
+tweet_concert.clean$location <- gsub("[^\x20-\x7E]","", tweet_concert.clean$location)
+
+tweet_party.clean$location <- gsub("https.*","", tweet_party.clean$location)
+tweet_party.clean$location <- gsub("http.*","", tweet_party.clean$location)
+tweet_party.clean$location <- gsub("#.*","", tweet_party.clean$location)
+tweet_party.clean$location <- gsub("@.*","", tweet_party.clean$location)
+tweet_party.clean$location <- gsub("[^[:alnum:][:blank:]?&/\\-]","", tweet_party.clean$location)
+tweet_party.clean$location <- gsub("U00..","", tweet_party.clean$location)
+tweet_party.clean$location <- gsub("[^\x20-\x7E]","", tweet_party.clean$location)
+```
+
 
 
 
 b. Remove all duplicate tweets in the newly merged set of tweets. A tweet is a duplicate if the text is exactly the same as the text in another tweet. In removing the duplicate tweets, it might be useful to keep the one that has the highest retweet count. [2]
 ```{r}
-
+tweet_beer.clean.unique <- subset(tweet_beer.clean, !duplicated(tweet_beer.clean$text))
+tweet_beverage.clean.unique <- subset(tweet_beverage.clean, !duplicated(tweet_beverage.clean$text))
+tweet_concert.clean.unique <- subset(tweet_concert.clean, !duplicated(tweet_concert.clean$text))
+tweet_party.clean.unique <- subset(tweet_party.clean, !duplicated(tweet_party.clean$text))
 ```
+
 
 
 
 c. Explore the merged tweets and provide descriptive statistics. [3]
+
+- Beer descriptive statistics
 ```{r}
+beer_count = nrow(tweet_beer.clean.unique)
+
+beer_user_most_retweet = unname( tweet_beer.clean.unique[
+                max(tweet_beer.clean.unique$followers_count)==tweet_beer.clean.unique$followers_count                     
+                ,"screen_name"
+                ]
+              )
+
+beer_most_retweet = unname(
+              tweet_beer.clean.unique[
+                max(tweet_beer.clean.unique$retweet_count)==tweet_beer.clean.unique$retweet_count  
+                ,"text"
+                ]
+              ) 
+
+beer_location_count <- table(tweet_beer.clean.unique$location)
+beer_location_count <- as.data.frame(beer_location_count)
+
+# remove empty location row
+beer_location_count <- subset(beer_location_count, beer_location_count$Var1 != "")
+
+
+beer_location_most_tweet = unname(
+              beer_location_count[
+                max(beer_location_count$Freq)==beer_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+
+```
+
+```{r, echo=FALSE}
+print("-------------------------------------------------")
+print("                    Beer")
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", beer_count))
+print(paste("The user with the most followers: ", beer_user_most_retweet))
+print(paste("The tweets with the most retweet: ", beer_most_retweet))
+print(paste("The location with the most tweets: ", beer_location_most_tweet))
 
 ```
 
 
+- Beverage descriptive statistics
+```{r}
+beverage_count = nrow(tweet_beverage.clean.unique)
+
+beverage_user_most_retweet = unname( tweet_beverage.clean.unique[
+                max(tweet_beverage.clean.unique$followers_count)==tweet_beverage.clean.unique$followers_count                     
+                ,"screen_name"
+                ]
+              )
+
+beverage_most_retweet = unname(
+              tweet_beverage.clean.unique[
+                max(tweet_beverage.clean.unique$retweet_count)==tweet_beverage.clean.unique$retweet_count  
+                ,"text"
+                ]
+              ) 
+
+beverage_location_count <- table(tweet_beverage.clean.unique$location)
+beverage_location_count <- as.data.frame(beverage_location_count)
+
+# remove empty location row
+beverage_location_count <- subset(beverage_location_count, beverage_location_count$Var1 != "")
+
+
+beverage_location_most_tweet = unname(
+              beverage_location_count[
+                max(beverage_location_count$Freq)==beverage_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+
+```
+
+```{r, echo=FALSE}
+print("-------------------------------------------------")
+print("                    beverage")
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", beverage_count))
+print(paste("The user with the most followers: ", beverage_user_most_retweet))
+print(paste("The tweets with the most retweet: ", beverage_most_retweet))
+print(paste("The location with the most tweets: ", beverage_location_most_tweet))
+
+```
+
+- party descriptive statistics
+```{r}
+party_count = nrow(tweet_party.clean.unique)
+
+party_user_most_retweet = unname( tweet_party.clean.unique[
+                max(tweet_party.clean.unique$followers_count)==tweet_party.clean.unique$followers_count                     
+                ,"screen_name"
+                ]
+              )
+
+party_most_retweet = unname(
+              tweet_party.clean.unique[
+                max(tweet_party.clean.unique$retweet_count)==tweet_party.clean.unique$retweet_count  
+                ,"text"
+                ]
+              ) 
+
+party_location_count <- table(tweet_party.clean.unique$location)
+party_location_count <- as.data.frame(party_location_count)
+
+# remove empty location row
+party_location_count <- subset(party_location_count, party_location_count$Var1 != "")
+
+
+party_location_most_tweet = unname(
+              party_location_count[
+                max(party_location_count$Freq)==party_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+
+```
+
+```{r, echo=FALSE}
+print("-------------------------------------------------")
+print("                    party")
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", party_count))
+print(paste("The user with the most followers: ", party_user_most_retweet))
+print(paste("The tweets with the most retweet: ", party_most_retweet))
+print(paste("The location with the most tweets: ", party_location_most_tweet))
+
+```
+
+- concert descriptive statistics
+```{r}
+concert_count = nrow(tweet_concert.clean.unique)
+
+concert_user_most_retweet = unname( tweet_concert.clean.unique[
+                max(tweet_concert.clean.unique$followers_count)==tweet_concert.clean.unique$followers_count                     
+                ,"screen_name"
+                ]
+              )
+
+concert_most_retweet = unname(
+              tweet_concert.clean.unique[
+                max(tweet_concert.clean.unique$retweet_count)==tweet_concert.clean.unique$retweet_count  
+                ,"text"
+                ]
+              ) 
+
+concert_location_count <- table(tweet_concert.clean.unique$location)
+concert_location_count <- as.data.frame(concert_location_count)
+
+# remove empty location row
+concert_location_count <- subset(concert_location_count, concert_location_count$Var1 != "")
+
+
+concert_location_most_tweet = unname(
+              concert_location_count[
+                max(concert_location_count$Freq)==concert_location_count$Freq                     
+                ,"Var1"
+                ]
+              ) 
+
+```
+
+```{r, echo=FALSE}
+print("-------------------------------------------------")
+print("                    concert")
+print("-------------------------------------------------")
+print(paste("The number of Twets retrieved are: ", concert_count))
+print(paste("The user with the most followers: ", concert_user_most_retweet))
+print(paste("The tweets with the most retweet: ", concert_most_retweet))
+print(paste("The location with the most tweets: ", concert_location_most_tweet))
+
+```
+
+### Analysis on emotions
+```{r}
+t.beer <- tweet_beer.clean.unique
+t.beverage <- tweet_beverage.clean.unique
+t.party <- tweet_party.clean.unique
+t.concert <- tweet_concert.clean.unique
+
+#extract emotions
+t.beer.emot <- get_nrc_sentiment(t.beer$text)
+t.beverage.emot <- get_nrc_sentiment(t.beverage$text)
+t.party.emot <- get_nrc_sentiment(t.party$text)
+t.concert.emot <- get_nrc_sentiment(t.concert$text)
+
+t.beer <- cbind(t.beer, t.beer.emot)
+t.beverage <- cbind(t.beverage, t.beverage.emot)
+t.party <- cbind(t.party, t.party.emot)
+t.concert <- cbind(t.concert, t.concert.emot)
+
+#extract sentiments
+t.beer.sent <-  get_sentiment(t.beer$text)
+t.beverage.sent <-  get_sentiment(t.beverage$text)
+t.party.sent <-  get_sentiment(t.party$text)
+t.concert.sent <-  get_sentiment(t.concert$text)
+
+t.beer <- cbind(t.beer, t.beer.sent)
+t.beverage <- cbind(t.beverage, t.beverage.sent)
+t.party <- cbind(t.party, t.party.sent)
+t.concert <- cbind(t.concert, t.concert.sent)
+
+```
+
+```{r}
+```
+
 
 d. What are the dominant emotions associated with beverages in any two locations? [4]
 ```{r}
+# The two location that were chosen is the two top locations for beverages
+us_data <- subset(t.beverage, t.beverage$location=="United States",  select = names(t.beer.emot) )
+us_data.sum <- colSums(us_data)
+
+ny_data <- subset(t.beverage, t.beverage$location=="New York, NY",  select = names(t.beer.emot) )
+ny_data.sum <- colSums(ny_data)
+
+# get the dominant emotions
+
+us_dom_emot <- names(us_data.sum)[match(max(us_data.sum),us_data.sum)]
+
+ny_dom_emot = names(ny_data.sum)[match(max(ny_data.sum),ny_data.sum)]
+```
+
+```{r, echo=FALSE}
+print("The dominant emotions are: ")
+print(paste("United States : ", us_dom_emot))
+print(paste("New York, NY : ", ny_dom_emot))
 
 ```
 
@@ -85,6 +420,25 @@ d. What are the dominant emotions associated with beverages in any two locations
 
 e. What are the dominant emotions in the overall dataset? [2]
 ```{r}
+t.beer.emot.sum <- colSums(t.beer.emot)
+t.beer.emot.dom <- names(t.beer.emot.sum)[match(max(t.beer.emot.sum),t.beer.emot.sum)]
+
+t.beverage.emot.sum <- colSums(t.beverage.emot)
+t.beverage.emot.dom <- names(t.beverage.emot.sum)[match(max(t.beverage.emot.sum),t.beverage.emot.sum)]
+
+t.party.emot.sum <- colSums(t.party.emot)
+t.party.emot.dom <- names(t.party.emot.sum)[match(max(t.party.emot.sum),t.party.emot.sum)]
+
+t.concert.emot.sum <- colSums(t.concert.emot)
+t.concert.emot.dom <- names(t.concert.emot.sum)[match(max(t.concert.emot.sum),t.concert.emot.sum)]
+
+```
+```{r, echo=FALSE}
+print("The dominant emotions in the oeral data set are: ")
+print(paste("Beers : ", t.beer.emot.dom))
+print(paste("Beverages : ", t.beverage.emot.dom))
+print(paste("Parties : ", t.party.emot.dom))
+print(paste("Concerts : ", t.concert.emot.dom))
 
 ```
 
@@ -92,24 +446,99 @@ e. What are the dominant emotions in the overall dataset? [2]
 
 f. What is the overall sentiment in tweets regarding “beverages” and “party or concert” (separately)?[4]
 ```{r}
+beer_overall_sent <- sum(t.beer.sent)
+bev_overall_sent <- sum(t.beverage.sent)
+party_overall_sent <- sum(t.party.sent)
+concert_overall_sent <- sum(t.concert.sent)
+```
+```{r, echo=FALSE}
+print("The overall sentiments are: ")
+print(paste("Beer : ", beer_overall_sent,", ", if(beer_overall_sent > 0) "Postive" else "Negative"  ))
+print(paste("Beverage : ", bev_overall_sent,", ", if(bev_overall_sent > 0) "Postive" else "Negative"  ))
+print(paste("Party : ", party_overall_sent,", ", if(party_overall_sent > 0) "Postive" else "Negative"  ))
+print(paste("Concert : ", concert_overall_sent,", ", if(concert_overall_sent > 0) "Postive" else "Negative"  ))
+
 
 ```
-
-
 
 g. Conduct ONE additional analysis of your choice to discover any further useful insights.[4]
 ```{r}
+# beer 
+
+beer_location_sent <- beer_location_count
+beer_location_sent$sentiment <- c(0)
+cnt <- NROW(beer_location_sent$Var1)
+
+for(i in 1:cnt){
+  data_sub <- subset(t.beer, t.beer$location == toString(beer_location_sent$Var1[i]))
+  beer_location_sent$sentiment[i] <- sum(data_sub$t.beer.sent)
+}
+
+beer_loc_most_pos_sent <- beer_location_sent$Var1[match(max(beer_location_sent$sentiment),beer_location_sent$sentiment)]
+
+# beverage
+
+beverage_location_sent <- beverage_location_count
+beverage_location_sent$sentiment <- c(0)
+cnt <- NROW(beverage_location_sent$Var1)
+
+for(i in 1:cnt){
+  data_sub <- subset(t.beverage, t.beverage$location == toString(beverage_location_sent$Var1[i]))
+  beverage_location_sent$sentiment[i] <- sum(data_sub$t.beverage.sent)
+}
+
+beverage_loc_most_pos_sent <- beverage_location_sent$Var1[match(max(beverage_location_sent$sentiment),beverage_location_sent$sentiment)]
+
+# party
+
+party_location_sent <- party_location_count
+party_location_sent$sentiment <- c(0)
+cnt <- NROW(party_location_sent$Var1)
+
+for(i in 1:cnt){
+  data_sub <- subset(t.party, t.party$location == toString(party_location_sent$Var1[i]))
+  party_location_sent$sentiment[i] <- sum(data_sub$t.party.sent)
+}
+
+party_loc_most_pos_sent <- party_location_sent$Var1[match(max(party_location_sent$sentiment),party_location_sent$sentiment)]
+
+# concert
+
+concert_location_sent <- concert_location_count
+concert_location_sent$sentiment <- c(0)
+cnt <- NROW(concert_location_sent$Var1)
+
+for(i in 1:cnt){
+  data_sub <- subset(t.concert, t.concert$location == toString(concert_location_sent$Var1[i]))
+  concert_location_sent$sentiment[i] <- sum(data_sub$t.concert.sent)
+}
+
+concert_loc_most_pos_sent <- concert_location_sent$Var1[match(max(concert_location_sent$sentiment),concert_location_sent$sentiment)]
+
+```
+```{r, echo=FALSE}
+print("The location with the most positive sentiment are: ")
+print(paste("Beer : ", beer_loc_most_pos_sent))
+print(paste("Beverage : ", beverage_loc_most_pos_sent))
+print(paste("Party : ", party_loc_most_pos_sent))
+print(paste("Concert : ", concert_loc_most_pos_sent))
 
 ```
 
 
-
 ## 2. Collect, Explore, Prepare Structured Data [20 marks]
+
+```{r, include=FALSE}
+# load consumer data
+consumer_data <- read.csv("consumer_pt02_2021.csv", stringsAsFactors = TRUE)
+```
+
 
 a. Download the datafile consumer_pt02_2021.csv from OurVLE
 ```{r}
 consumer_pt02<- read.csv(file.choose())
 ```
+
 
 
 
@@ -236,6 +665,7 @@ d. Format/reformat the data as necessary. Please note that as you proceed throug
 
 #Reformmationg the data
 ```{r}
+<<<<<<< HEAD
 
 
 #Change chr to date
@@ -268,53 +698,158 @@ str(new_consumer_pt02)  # now look at the classes
 colSums(is.na(new_consumer_pt02))
 ```
 
+=======
+>>>>>>> ce76964b65a31233e6cc4d0b2164c5856692149f
 
-```{r}
 ```
+
 
 
 
 ## 3. Structured Data Analysis/Modeling [35]
 
 Write code to conduct analysis that will answer the questions below. You are encouraged to use tables/graphs where necessary to visualize results. Additionally, your code should be shown along with each question, the result and notes that explain the results.
+
 a. What is the average spend on beverages in each country? [3]
 ```{r}
+data.consumer <- consumer_data
+data.consumer.bev <-  subset(data.consumer, data.consumer$X=="Beverages")
 
+data.consumer.bev <-  subset(data.consumer.bev, data.consumer.bev$Country!="k")
+
+
+consumer.countries <- table(data.consumer.bev$Country)
+consumer.countries <- as.data.frame(consumer.countries)
+
+consumer.countries <- subset(consumer.countries, consumer.countries$Var1!="k")
+
+consumer.countries$avg_spend <- c(0)
+
+
+for(i in 1:NROW(consumer.countries$Var1)){
+  country_name = toString(consumer.countries$Var1[i])
+  part_data = subset(data.consumer.bev, data.consumer.bev$Country==country_name)
+  consumer.countries$avg_spend[i] <- mean(as.numeric(part_data$Total.Cost))
+}
 ```
 
+```{r}
+hist(consumer.countries$avg_spend, col="orange")
+```
+
+```{r, echo=FALSE}
+kable(consumer.countries[1:4,1:3], caption = "Country and Avg Spend on beverages")
+```
 
 
 b. Which country has the highest spending on beverages? [2]
 ```{r}
+highest_spending <- data.consumer.bev$Country[match(max(as.numeric(data.consumer.bev$Total.Cost)), as.numeric(data.consumer.bev$Total.Cost))]
 
+print(paste("The country with the highest spending on beverages is: ", highest_spending))
 ```
-
 
 
 c. Which country consumes the most beverages? [2]
 ```{r}
+most_consume <- consumer.countries$Var1[match(max(consumer.countries$Freq), consumer.countries$Freq)]
 
+print(paste("The country that consumes the most beverage is : ", highest_spending))
 ```
 
 
 
 d. What is the average profit from the sale of beverages in each country? [3]
 ```{r}
+consumer.countries$avg_profit <- c(0)
 
+for(i in 1:NROW(consumer.countries$Var1)){
+  country_name = toString(consumer.countries$Var1[i])
+  part_data = subset(data.consumer.bev, data.consumer.bev$Country==country_name)
+  consumer.countries$avg_profit[i] <- mean(as.numeric(part_data$Total.Profit))
+}
 ```
 
+```{r}
+hist(consumer.countries$avg_profit, col="orange")
+```
+
+```{r, echo=FALSE}
+kable(consumer.countries[1:4,1:4], caption = "Country and avg profit on beverages")
+```
 
 
 e. What has been the total revenue from beverages for each year since 2014? [5]
 ```{r}
 
+# convert the order dates to years only
+data.consumer.bev.yearOnly <- data.consumer.bev
+
+
+data.consumer.bev.yearOnly$Order.Date <- as.integer(format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), format = "%Y"))
+
+bev_yearly_rev <- table(data.consumer.bev.yearOnly$Order.Date)
+bev_yearly_rev <- as.data.frame(bev_yearly_rev)
+
+bev_yearly_rev$revenue <- c(0)
+
+bev_yearly_rev <- subset(bev_yearly_rev, bev_yearly_rev$Var1 != 2013)
+bev_yearly_rev <- subset(bev_yearly_rev, bev_yearly_rev$Var1 != 2012)
+
+data = subset(data.consumer.bev.yearOnly, data.consumer.bev.yearOnly$Order.Date== bev_yearly_rev$Var1[1])
+
+# calculate the revenues
+for(i in 1:NROW(bev_yearly_rev$Var1)){
+  data = subset(data.consumer.bev.yearOnly, data.consumer.bev.yearOnly$Order.Date== bev_yearly_rev$Var1[i])
+  
+  bev_yearly_rev$revenue[i] <- sum(as.numeric(data$Total.Revenue))
+  
+}
+
 ```
 
-
+```{r}
+bev_yearly_rev %>% ggplot(aes(x=Var1,y=revenue)) +geom_point() 
+```
 
 
 f. Plot a time series graph showing change in overall revenues from beverages for the last six months (in the dataset). [4]
 ```{r}
+earliest_date <- max(as.integer(format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), "%Y%m%d")),  na.rm = TRUE)
+earliest_date <- as.Date(toString(earliest_date), "%Y%m%d")
+
+analysis_date <- earliest_date %m-% months(6)
+
+data.consumer.bev.filter <- filter(data.consumer.bev,(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") >= analysis_date ))
+
+data.consumer.bev.filter$rOrder.Date <- as.Date(data.consumer.bev.filter$Order.Date,"%m/%d/%Y")
+
+data.consumer.bev.filter$Total.Revenue.num <- as.numeric(data.consumer.bev.filter$Total.Revenue)
+
+data_monthly_rev <- data.frame(date = c(as.Date("2014-12-31")), revenue = c(0,0,0,0,0,0))
+
+
+# avg each month data 
+for(i in 1:6){
+  start_mth <- analysis_date %m+% months(i-1)
+  end_mth <- analysis_date %m+% months(i)
+  fil_data <- filter(data.consumer.bev,(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") >= start_mth & as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") < end_mth ))
+  avg_rev <- sum(as.integer(fil_data$Total.Revenue))
+  data_monthly_rev$date[i] <- start_mth
+  data_monthly_rev$revenue[i] <- avg_rev
+}
+data_monthly_rev
+
+
+```
+
+```{r}
+# The revenues for each day 
+plot(data.consumer.bev.filter$Total.Revenue.num~data.consumer.bev.filter$rOrder.Date,type="p", col="green")
+
+# Total revenue per month
+plot(data_monthly_rev$revenue~data_monthly_rev$date,type="l", col="green")
+
 
 ```
 
@@ -335,12 +870,10 @@ h. Determine whether beverages units sold is above the overall average for units
 
 
 
-
 i. In which season (Spring, Summer, Autumn, Winter) does persons spend the most on beverages? [6]
 ```{r}
 
 ```
-
 
 
 
