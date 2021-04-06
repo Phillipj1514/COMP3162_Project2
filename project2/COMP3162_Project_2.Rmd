@@ -12,7 +12,15 @@ output: pdf_document
 [Weighted 15% of course marks]
 
 **DUE: April 07, 2021**
-
+##Importing Libraries
+```{r}
+library(dplyr)
+library(knitr)
+library(SnowballC)
+library(syuzhet)
+library(tidyverse)
+library(ggplot2)
+```
 
 ## 1. Tweet Data Analysis [20]
 
@@ -100,21 +108,125 @@ g. Conduct ONE additional analysis of your choice to discover any further useful
 
 a. Download the datafile consumer_pt02_2021.csv from OurVLE
 ```{r}
-
+consumer_pt02<- read.csv(file.choose())
 ```
 
 
 
 b. Explore the data and provide details on all fields retrieved. You should ensure all features in the dataset (each column) are reviewed and summarized to verify things such as value ranges, missing values etc. Be sure to generate relevant graphical representations where necessary to demonstrate your review and decision making. [7]
 ```{r}
+#Checks to see if we are working with a dataframe
+class(consumer_pt02)
+
+#Gets the rows and columns of the customer dataframe.
+dim(consumer_pt02)
+
+#Returns the Column Names
+names(consumer_pt02)
+
+#Returns the structure of the dataframe
+str(consumer_pt02)
+
+#Sample Random Rows in the data using the dplyr package
+sample_n(consumer_pt02, 5)
+
+#View Structure of Consumer_pt02 the dplyr way
+glimpse(consumer_pt02)
+
+summary(consumer_pt02)
+
+#Viewing the head of the data
+head(consumer_pt02)
+
+#Viewing the tail of the data
+tail(consumer_pt02)
+
+#lets you quickly count the unique values of one or more variables
+count(consumer_pt02,Region)
+count(consumer_pt02,Country)
+count(consumer_pt02,X)
+count(consumer_pt02,Sales.Channel)
+count(consumer_pt02,Order.Priority)
+
+#Another Way
+consumer_pt02 %>% count(Order.Priority)
+
+count(consumer_pt02,Order.Date)
+count(consumer_pt02,Order.ID)
+count(consumer_pt02,Ship.Date)
+count(consumer_pt02,Units.Sold)
+count(consumer_pt02,Unit.Price)
+count(consumer_pt02,Unit.Cost)
+count(consumer_pt02,Total.Revenue)
+count(consumer_pt02,Total.Cost)
+count(consumer_pt02,Total.Profit)
+
+#Check NA Values
+colSums(is.na(consumer_pt02))
+sum(is.na(consumer_pt02))
+
+
+
+```
+
+#Data exploration
+#Thoughts
+#Relationship Between Unit Price and Unit Cost
+#Populate the Profit Column. [Total Cost - Total Revenue]
+#Do a lone graph on the Above based on the years to see which years made more or less profit. 
+```{r}
+
+ggplot(data = consumer_pt02) +
+  geom_bar(mapping = aes(x = Order.Priority,fill = Order.Priority))
+
+unit.price <- as.numeric(consumer_pt02$Unit.Price)
+unit.price[is.na(unit.price)] <- mean(unit.price, na.rm=TRUE)
+
+hist(unit.price,
+  xlab = "Unit.Price",
+  main = "Histogram of Unit Price",
+  breaks = sqrt(nrow(consumer_pt02))
+) # set number of bins
+
+ggplot(consumer_pt02) +
+  aes(x = unit.price) +
+  geom_histogram(bins = 30L, fill = "#0c4c8a") +
+  theme_minimal()
+
+ggplot(consumer_pt02) +
+  aes(x = "", y = unit.price) +
+  geom_boxplot(fill = "#0c4c8a") +
+  theme_minimal()
+
+boxplot.stats(unit.price)$out
+which(unit.price %in% c(boxplot.stats(unit.price)$out))
+
 
 ```
 
 
 
-
 c. Fix noise, outlier and any other issues discovered (example: na values). You must provide discussion / explanation of all activities done and why each decision has been made. [8]
 ```{r}
+#Duplicating the Consumer Data Frame.
+new_consumer_pt02 <- consumer_pt02
+
+#Cleaning the data For Region
+
+new_consumer_pt02$Region <- gsub("https.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("http.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("#.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("@.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("[^[:alnum:][:blank:]?&/\\-]","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("U00..","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("[^\x20-\x7E]","",new_consumer_pt02$Region)
+
+count(new_consumer_pt02,Region)
+mean(new_consumer_pt02$Unit.Price, na.rm=TRUE)
+
+
+new_consumer_pt02$Unit.Price[new_consumer_pt02$Unit.Price==""] <- mean(new_consumer_pt02$Unit.Price, na.rm=TRUE)
+
 
 ```
 
@@ -122,7 +234,38 @@ c. Fix noise, outlier and any other issues discovered (example: na values). You 
 
 d. Format/reformat the data as necessary. Please note that as you proceed through the project, you may need to do additional formatting to enable your analysis. [5]
 
+#Reformmationg the data
 ```{r}
+
+
+#Change chr to date
+new_consumer_pt02$Order.Date <- as.Date(new_consumer_pt02$Order.Date, "%m/%d/%Y")
+new_consumer_pt02$Ship.Date<- as.Date(new_consumer_pt02$Ship.Date, "%m/%d/%Y")
+
+#Change to Categorical Variables
+new_consumer_pt02[, 'Order.Priority'] <- as.factor(new_consumer_pt02[, 'Order.Priority'])
+
+new_consumer_pt02[, 'X'] <- as.factor(new_consumer_pt02[, 'X'])
+
+new_consumer_pt02[, 'Sales.Channel'] <- as.factor(new_consumer_pt02[, 'Sales.Channel'])
+
+#Convert to Integer
+new_consumer_pt02[, 'Units.Sold'] <- as.integer(new_consumer_pt02[, 'Units.Sold'])
+
+#Convert to Numeric
+new_consumer_pt02[, "Unit.Price"] <- as.numeric(new_consumer_pt02[, "Unit.Price"])
+
+new_consumer_pt02[, "Unit.Cost"] <- as.numeric(new_consumer_pt02[, "Unit.Cost"])
+
+new_consumer_pt02[, "Total.Revenue"] <- as.numeric(new_consumer_pt02[, "Total.Revenue"])
+
+new_consumer_pt02[, "Total.Cost"] <- as.numeric(new_consumer_pt02[, 'Total.Cost'])
+
+new_consumer_pt02[, "Total.Profit"] <- as.numeric(new_consumer_pt02[, "Total.Profit"])
+
+
+str(new_consumer_pt02)  # now look at the classes
+colSums(is.na(new_consumer_pt02))
 ```
 
 
