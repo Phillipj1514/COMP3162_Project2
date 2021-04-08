@@ -1,0 +1,352 @@
+---
+title: "COMP3162 Project 2"
+author: "620118149, 620110644"
+date: "3/30/2021"
+output: pdf_document
+---
+
+# Project Part 02 – Teamwork
+
+**(2 persons per team)**
+
+[Weighted 15% of course marks]
+
+**DUE: April 07, 2021**
+##Importing Libraries
+```{r}
+library(dplyr)
+library(knitr)
+library(SnowballC)
+library(syuzhet)
+#library(tidyverse)
+library(ggplot2)
+```
+
+## 1. Tweet Data Analysis [20]
+
+a. Merge the tweets collected from project 01 by each person in the team. [1]
+```{r}
+##Read Beverage Tweet CSV Files
+bev1_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+bev1_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+#Merge Beverage Tweet DataFrames
+bev1_anna$X <- NULL
+bev1_total <- merge(bev1_anna,bev1_phillip,by="user_id")
+##Read Concert Tweet CSV Files
+concert_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+concert_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+#Merge Concert Tweet DataFrames
+concert_anna$X <- NULL
+concert_total <- merge(concert_anna,concert_phillip,by="user_id")
+##Read Beer Tweet CSV Files
+beer_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+beer_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+#Merge Concert Tweet DataFrames
+beer_anna$X <- NULL
+beer_total <- merge(beer_anna,beer_phillip,by="user_id")
+##Read Party Tweet CSV Files
+party_anna <- read.csv(file.choose(),stringsAsFactors = TRUE)
+party_phillip <- read.csv(file.choose(),stringsAsFactors = TRUE)
+#Merge Concert Tweet DataFrames
+party_anna$X <- NULL
+party_total <- merge(party_anna,party_phillip,by="user_id")
+```
+
+
+
+b. Remove all duplicate tweets in the newly merged set of tweets. A tweet is a duplicate if the text is exactly the same as the text in another tweet. In removing the duplicate tweets, it might be useful to keep the one that has the highest retweet count. [2]
+```{r}
+```
+
+
+
+c. Explore the merged tweets and provide descriptive statistics. [3]
+```{r}
+```
+
+
+
+d. What are the dominant emotions associated with beverages in any two locations? [4]
+```{r}
+```
+
+
+
+e. What are the dominant emotions in the overall dataset? [2]
+```{r}
+```
+
+
+
+f. What is the overall sentiment in tweets regarding “beverages” and “party or concert” (separately)?[4]
+```{r}
+```
+
+
+
+g. Conduct ONE additional analysis of your choice to discover any further useful insights.[4]
+```{r}
+```
+
+
+
+## 2. Collect, Explore, Prepare Structured Data [20 marks]
+
+a. Download the datafile consumer_pt02_2021.csv from OurVLE
+```{r}
+consumer_pt02<- read.csv(file.choose())
+```
+
+
+
+b. Explore the data and provide details on all fields retrieved. You should ensure all features in the dataset (each column) are reviewed and summarized to verify things such as value ranges, missing values etc. Be sure to generate relevant graphical representations where necessary to demonstrate your review and decision making. [7]
+```{r}
+#Checks to see if we are working with a dataframe
+class(consumer_pt02)
+#Gets the rows and columns of the customer dataframe.
+dim(consumer_pt02)
+#Returns the Column Names
+names(consumer_pt02)
+#Returns the structure of the dataframe
+str(consumer_pt02)
+#Sample Random Rows in the data using the dplyr package
+sample_n(consumer_pt02, 5)
+#View Structure of Consumer_pt02 the dplyr way
+glimpse(consumer_pt02)
+summary(consumer_pt02)
+#Viewing the head of the data
+head(consumer_pt02)
+#Viewing the tail of the data
+tail(consumer_pt02)
+#lets you quickly count the unique values of one or more variables
+count(consumer_pt02,Region)
+count(consumer_pt02,Country)
+count(consumer_pt02,X)
+count(consumer_pt02,Sales.Channel)
+count(consumer_pt02,Order.Priority)
+#Another Way
+consumer_pt02 %>% count(Order.Priority)
+count(consumer_pt02,Order.Date)
+count(consumer_pt02,Order.ID)
+count(consumer_pt02,Ship.Date)
+count(consumer_pt02,Units.Sold)
+count(consumer_pt02,Unit.Price)
+count(consumer_pt02,Unit.Cost)
+count(consumer_pt02,Total.Revenue)
+count(consumer_pt02,Total.Cost)
+count(consumer_pt02,Total.Profit)
+#Check NA Values
+colSums(is.na(consumer_pt02))
+sum(is.na(consumer_pt02))
+```
+
+#Data exploration
+#https://r4ds.had.co.nz/exploratory-data-analysis.html
+#https://cran.r-project.org/doc/contrib/de_Jonge+van_der_Loo-Introduction_to_data_cleaning_with_R.pdf
+
+#Thoughts
+#Relationship Between Unit Price and Unit Cost
+#Populate the Profit Column. [Total Cost - Total Revenue]
+#Do a lone graph on the Above based on the years to see which years made more or less profit. 
+```{r}
+ggplot(data = consumer_pt02) +
+  geom_bar(mapping = aes(x = Order.Priority,fill = Order.Priority))
+ggplot(data = consumer_pt02) +
+  geom_bar(mapping = aes(x = Sales.Channel,fill = Sales.Channel))
+ggplot(data = consumer_pt02) +
+  geom_bar(mapping = aes(x = X,fill = X))
+#/// Trials to Subset dataframe according to the date
+consumer_pt02[consumer_pt02$Order.Date <= "01/01/2016" && consumer_pt02$Order.Date <= "12/31/2016"]
+subset(consumer_pt02, as.Date(Order.Date,format = "%m/%d/%Y") <= "2016-01-01" && as.Date(Order.Date,format = "%m/%d/%Y") <= "2016-12-31")
+head(datecheck)
+```
+
+
+
+```{r}
+unit.price <- as.numeric(consumer_pt02$Unit.Price)
+unit.price[is.na(unit.price)] <- mean(unit.price, na.rm=TRUE)
+hist(unit.price,
+  xlab = "Unit.Price",
+  main = "Histogram of Unit Price",
+  breaks = sqrt(nrow(consumer_pt02))
+) # set number of bins
+consumer_pt02$Unit.Price <- as.numeric(consumer_pt02$Unit.Price)
+hist(na.omit(consumer_pt02$Unit.Price),
+  xlab = "Unit.Price",
+  main = "Histogram of Unit Price",
+  breaks = sqrt(nrow(consumer_pt02))
+) # set number of bins
+ggplot(consumer_pt02) +
+  aes(x = unit.price) +
+  geom_histogram(bins = 30L, fill = "#0c4c8a") +
+  theme_minimal()
+ggplot(consumer_pt02) +
+  aes(x = "", y = unit.price) +
+  geom_boxplot(fill = "#0c4c8a") +
+  theme_minimal()
+boxplot.stats(unit.price)$out
+which(unit.price %in% c(boxplot.stats(unit.price)$out))
+datecheck<-data.frame(as.Date(consumer_pt02$Order.Date,format = "%m/%d/%Y"))
+datecheck %>%
+  filter(between(as.Date.consumer_pt02.Order.Date..format.....m..d..Y.., as.Date("2016-01-01"), as.Date("2016-12-31")))
+```
+
+
+c. Fix noise, outlier and any other issues discovered (example: na values). You must provide discussion / explanation of all activities done and why each decision has been made. [8]
+```{r}
+#Duplicating the Consumer Data Frame.
+new_consumer_pt02 <- consumer_pt02
+#Cleaning the data For Region
+head(new_consumer_pt02)
+new_consumer_pt02$Region<- toString(new_consumer_pt02$Region)
+head(new_consumer_pt02)
+new_consumer_pt02$Region <- gsub("https.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("http.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("#.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("@.*","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("[^[:alnum:][:blank:]?&/\\-]","",new_consumer_pt02$Region)
+new_consumer_pt02$Region <- gsub("U00..","",new_consumer_pt02$Region)
+count(new_consumer_pt02,Region)
+mean(new_consumer_pt02$Unit.Price, na.rm=TRUE)
+new_consumer_pt02$Unit.Price[new_consumer_pt02$Unit.Price==""] <- mean(new_consumer_pt02$Unit.Price, na.rm=TRUE)
+```
+
+
+
+d. Format/reformat the data as necessary. Please note that as you proceed through the project, you may need to do additional formatting to enable your analysis. [5]
+
+#Reformmationg the data
+```{r}
+#Change chr to date
+new_consumer_pt02$Order.Date <- as.Date(new_consumer_pt02$Order.Date, "%m/%d/%Y")
+new_consumer_pt02$Ship.Date<- as.Date(new_consumer_pt02$Ship.Date, "%m/%d/%Y")
+#Change to Categorical Variables
+new_consumer_pt02[, 'Order.Priority'] <- as.factor(new_consumer_pt02[, 'Order.Priority'])
+new_consumer_pt02[, 'X'] <- as.factor(new_consumer_pt02[, 'X'])
+new_consumer_pt02[, 'Sales.Channel'] <- as.factor(new_consumer_pt02[, 'Sales.Channel'])
+#Convert to Integer
+new_consumer_pt02[, 'Units.Sold'] <- as.integer(new_consumer_pt02[, 'Units.Sold'])
+#Convert to Numeric
+new_consumer_pt02[, "Unit.Price"] <- as.numeric(new_consumer_pt02[, "Unit.Price"])
+new_consumer_pt02[, "Unit.Cost"] <- as.numeric(new_consumer_pt02[, "Unit.Cost"])
+new_consumer_pt02[, "Total.Revenue"] <- as.numeric(new_consumer_pt02[, "Total.Revenue"])
+new_consumer_pt02[, "Total.Cost"] <- as.numeric(new_consumer_pt02[, 'Total.Cost'])
+new_consumer_pt02[, "Total.Profit"] <- as.numeric(new_consumer_pt02[, "Total.Profit"])
+str(new_consumer_pt02)  # now look at the classes
+colSums(is.na(new_consumer_pt02))
+```
+
+
+```{r}
+```
+
+
+
+## 3. Structured Data Analysis/Modeling [35]
+
+Write code to conduct analysis that will answer the questions below. You are encouraged to use tables/graphs where necessary to visualize results. Additionally, your code should be shown along with each question, the result and notes that explain the results.
+a. What is the average spend on beverages in each country? [3]
+```{r}
+```
+
+
+
+b. Which country has the highest spending on beverages? [2]
+```{r}
+```
+
+
+
+c. Which country consumes the most beverages? [2]
+```{r}
+```
+
+
+
+d. What is the average profit from the sale of beverages in each country? [3]
+```{r}
+```
+
+
+
+e. What has been the total revenue from beverages for each year since 2014? [5]
+```{r}
+```
+
+
+
+
+f. Plot a time series graph showing change in overall revenues from beverages for the last six months (in the dataset). [4]
+```{r}
+```
+
+
+
+
+g. What is the dominant sales channel for beverages?[2]
+```{r}
+```
+
+
+
+h. Determine whether beverages units sold is above the overall average for units sold for all other products. [3]
+```{r}
+```
+
+
+
+
+i. In which season (Spring, Summer, Autumn, Winter) does persons spend the most on beverages? [6]
+```{r}
+```
+
+
+
+
+j. Is there a correlation between the season and the units sold for beverages? Explain the result. [5]
+```{r}
+```
+
+
+## 4. Recommendation:
+
+a. Based on your analysis of both the tweet data and structured data, what would you recommend to Hard Knocks and why?
+
+
+
+
+## 5. BONUS – 10 marks
+
+a. Which features in the dataset can be used to predict the units sold for beverages?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
