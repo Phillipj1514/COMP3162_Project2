@@ -1,6 +1,6 @@
 ---
 title: "COMP3162 Project 2"
-author: "620118149, 620110644"
+author: "Phillip Llewellyn - 620118149, Annabelle Ellis - 620110644"
 date: "3/30/2021"
 output: pdf_document
 ---
@@ -520,40 +520,170 @@ print(paste("Concert : ", concert_loc_most_pos_sent))
 
 ## 2. Collect, Explore, Prepare Structured Data [20 marks]
 
-```{r, include=FALSE}
-# load consumer data
-consumer_data <- read.csv("consumer_pt02_2021.csv", stringsAsFactors = TRUE)
-```
-
 
 a. Download the datafile consumer_pt02_2021.csv from OurVLE
 ```{r}
+consumer_data <- read.csv("consumer_pt02_2021.csv", stringsAsFactors = TRUE)
 
 ```
+
+
 
 
 
 
 b. Explore the data and provide details on all fields retrieved. You should ensure all features in the dataset (each column) are reviewed and summarized to verify things such as value ranges, missing values etc. Be sure to generate relevant graphical representations where necessary to demonstrate your review and decision making. [7]
 ```{r}
+# clean the data
+consumer_data.clean <- consumer_data
+consumer_data.clean$X <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$X)
+consumer_data.clean$Region <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Region)
+consumer_data.clean$Country <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Country)
+consumer_data.clean$Sales.Channel <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Sales.Channel)
+consumer_data.clean$Order.Priority <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Order.Priority)
+consumer_data.clean$Order.Date <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Order.Date)
+consumer_data.clean$Order.ID <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Order.ID)
+consumer_data.clean$Ship.Date <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Ship.Date)
+consumer_data.clean$Units.Sold <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Units.Sold)
+consumer_data.clean$Unit.Price <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Unit.Price)
+consumer_data.clean$Unit.Price <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Unit.Price)
+consumer_data.clean$Unit.Cost <- gsub(",","", consumer_data.clean$Unit.Cost)
+consumer_data.clean$Total.Revenue <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Total.Revenue)
+consumer_data.clean$Total.Cost <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Total.Cost)
+consumer_data.clean$Total.Profit <- gsub("[^[:alnum:][:blank:]?&/\\-]","", consumer_data.clean$Total.Profit)
+
+consumer_data.clean$Order.Date <- as.Date(consumer_data.clean$Order.Date, "%m/%d/%Y")
+consumer_data.clean$Ship.Date <- as.Date(consumer_data.clean$Ship.Date, "%m/%d/%Y")
+
+
+
+consumer_data.clean$Units.Sold <- suppressWarnings(as.numeric(consumer_data.clean$Units.Sold))
+consumer_data.clean$Unit.Price <- suppressWarnings(as.numeric(consumer_data.clean$Unit.Price))
+consumer_data.clean$Unit.Cost <- suppressWarnings(as.numeric(consumer_data.clean$Unit.Cost))
+consumer_data.clean$Total.Revenue <- suppressWarnings(as.numeric(consumer_data.clean$Total.Revenue))
+consumer_data.clean$Total.Cost <- suppressWarnings(as.numeric(consumer_data.clean$Total.Cost))
+consumer_data.clean$Total.Profit <- suppressWarnings(as.numeric(consumer_data.clean$Total.Profit))
+
+
+#summary(consumer_data.clean)
+
+
+
+#summary(consumer_data.clean$Sales.Channel)
+
+#count(consumer_data.clean, Sales.Channel)
+
+# show the summary of each of the numerical data
+summary(consumer_data.clean$Units.Sold)
+summary(consumer_data.clean$Unit.Price)
+summary(consumer_data.clean$Unit.Cost)
+summary(consumer_data.clean$Total.Revenue)
+summary(consumer_data.clean$Total.Cost)
+summary(consumer_data.clean$Total.Profit)
+
+# show the number of empty strings in the data set
+apply(consumer_data.clean,2,function(c) sum(c==""))
+
+# show the number of na values in the dataset for each column
+apply(consumer_data.clean,2,function(c) sum(is.na(c)))
+
+summary(consumer_data.clean$Order.Date)
+
 
 ```
+```{r}
+hist(consumer_data.clean$Units.Sol)
+hist(consumer_data.clean$Unit.Price)
+hist(consumer_data.clean$Unit.Cost)
+hist(consumer_data.clean$Total.Revenue)
+hist(consumer_data.clean$Total.Cost)
+hist(consumer_data.clean$Total.Profit)
+```
+
 
 
 
 
 c. Fix noise, outlier and any other issues discovered (example: na values). You must provide discussion / explanation of all activities done and why each decision has been made. [8]
+
+The analysis above is able to show us that the regions, sales channel and X holds qualitative data that has missing values. The data for the region which are missing or having a question mark were replaced with unknown as the region. This was done because there was little information that could be used to help to decide on the correct value. The missing sales channel was set to unknown due to insufficient data to set a value, however for values of Yes and k the chaneel was set to online. This was done due to an assumption that was made that the user was affirming the use of the online channel. The numeric data were calculated values. Therefore, an arithmatic calculation was used to correct the possible correctable missing values. The values that failed to be calculated the mean value was uded to replace the NA. This was done because for each column the values are not far apart from the mean value. 
+
 ```{r}
+#replace the column empty data
 
+consumer_data.clean[consumer_data.clean$Region == '',"Region"] <- "Unknown"
+consumer_data.clean[consumer_data.clean$Region == '?',"Region"] <- "Unknown"
+consumer_data.clean[consumer_data.clean$X == '',"X"] <- "Unknown"
+
+consumer_data.clean[consumer_data.clean$Sales.Channel == '',"Sales.Channel"] <- "Unknown"
+consumer_data.clean[consumer_data.clean$Sales.Channel == 'k',"Sales.Channel"] <- "Online"
+consumer_data.clean[consumer_data.clean$Sales.Channel == 'YES',"Sales.Channel"] <- "Online"
+
+# replace the NA values with the calculated answer
+
+for(i in 1:NROW( consumer_data.clean$Units.Sold )){
+  if( is.na(consumer_data.clean$Units.Sold[i]) == TRUE){
+    consumer_data.clean$Units.Sold[i] = consumer_data.clean$Total.Revenue[i] / consumer_data.clean$Unit.Price[i] 
+  }
+}
+
+for(i in 1:NROW( consumer_data.clean$Unit.Price )){
+  if( is.na(consumer_data.clean$Unit.Price[i]) ){
+     consumer_data.clean$Unit.Price[i] <- consumer_data.clean$Total.Revenue[i] / consumer_data.clean$Units.Sold[i] 
+  }
+}
+
+for(i in 1:NROW( consumer_data.clean$Unit.Cost )){
+  if( is.na(consumer_data.clean$Unit.Cost[i]) ){
+     consumer_data.clean$Unit.Cost[i] <- consumer_data.clean$Total.Cost[i] / consumer_data.clean$Units.Sold[i] 
+  }
+}
+
+for(i in 1:NROW( consumer_data.clean$Total.Revenue )){
+  if( is.na(consumer_data.clean$Total.Revenue[i]) ){
+     consumer_data.clean$Total.Revenue[i] <- consumer_data.clean$Unit.Price[i] * consumer_data.clean$Units.Sold[i] 
+  }
+}
+
+for(i in 1:NROW( consumer_data.clean$Total.Cost )){
+  if( is.na(consumer_data.clean$Total.Cost[i]) ){
+     consumer_data.clean$Total.Cost[i] <- consumer_data.clean$Unit.Cost[i] * consumer_data.clean$Units.Sold[i] 
+  }
+}
+
+for(i in 1:NROW( consumer_data.clean$Total.Profit )){
+  if( is.na(consumer_data.clean$Total.Profit[i]) ){
+     consumer_data.clean$Total.Profit[i] <- consumer_data.clean$Total.Revenue[i] - consumer_data.clean$Total.Cost[i] 
+  }
+}
+
+# use the mean for all the values that fail to fix through calculation
+
+consumer_data.clean[is.na(consumer_data.clean$Units.Sold),"Units.Sold"] <- mean(consumer_data.clean$Units.Sold, na.rm = TRUE)
+consumer_data.clean[is.na(consumer_data.clean$Unit.Price),"Unit.Price"] <- mean(consumer_data.clean$Unit.Price, na.rm = TRUE)
+consumer_data.clean[is.na(consumer_data.clean$Unit.Cost),"Unit.Cost"] <- mean(consumer_data.clean$Unit.Cost, na.rm = TRUE)
+consumer_data.clean[is.na(consumer_data.clean$Total.Revenue),"Total.Revenue"] <- mean(consumer_data.clean$Total.Revenue, na.rm = TRUE)
+consumer_data.clean[is.na(consumer_data.clean$Total.Cost),"Total.Cost"] <- mean(consumer_data.clean$Total.Cost, na.rm = TRUE)
+consumer_data.clean[is.na(consumer_data.clean$Total.Profit),"Total.Profit"] <- mean(consumer_data.clean$Total.Profit, na.rm = TRUE)
+
+# replace missing dates with the most frequent dates
+most_frequent_date <- mean(na.omit(consumer_data.clean$Order.Date))
+consumer_data.clean[is.na(consumer_data.clean$Order.Date),"Order.Date"] <- most_frequent_date
+
+most_frequent_date <- mean(na.omit(consumer_data.clean$Ship.Date))
+consumer_data.clean[is.na(consumer_data.clean$Ship.Date),"Ship.Date"] <- most_frequent_date
+
+apply(consumer_data.clean,2,function(c) sum(is.na(c)))
 ```
-
 
 
 d. Format/reformat the data as necessary. Please note that as you proceed through the project, you may need to do additional formatting to enable your analysis. [5]
 
 ```{r}
+#The data formating is done before
 
 ```
+
 
 
 
@@ -564,16 +694,12 @@ Write code to conduct analysis that will answer the questions below. You are enc
 
 a. What is the average spend on beverages in each country? [3]
 ```{r}
-data.consumer <- consumer_data
+data.consumer <- consumer_data.clean
 data.consumer.bev <-  subset(data.consumer, data.consumer$X=="Beverages")
-
-data.consumer.bev <-  subset(data.consumer.bev, data.consumer.bev$Country!="k")
 
 
 consumer.countries <- table(data.consumer.bev$Country)
 consumer.countries <- as.data.frame(consumer.countries)
-
-consumer.countries <- subset(consumer.countries, consumer.countries$Var1!="k")
 
 consumer.countries$avg_spend <- c(0)
 
@@ -581,7 +707,7 @@ consumer.countries$avg_spend <- c(0)
 for(i in 1:NROW(consumer.countries$Var1)){
   country_name = toString(consumer.countries$Var1[i])
   part_data = subset(data.consumer.bev, data.consumer.bev$Country==country_name)
-  consumer.countries$avg_spend[i] <- mean(as.numeric(part_data$Total.Cost))
+  consumer.countries$avg_spend[i] <- mean(part_data$Total.Cost)
 }
 ```
 
@@ -596,7 +722,7 @@ kable(consumer.countries[1:4,1:3], caption = "Country and Avg Spend on beverages
 
 b. Which country has the highest spending on beverages? [2]
 ```{r}
-highest_spending <- data.consumer.bev$Country[match(max(as.numeric(data.consumer.bev$Total.Cost)), as.numeric(data.consumer.bev$Total.Cost))]
+highest_spending <- data.consumer.bev$Country[match(max(data.consumer.bev$Total.Cost), data.consumer.bev$Total.Cost)]
 
 print(paste("The country with the highest spending on beverages is: ", highest_spending))
 ```
@@ -606,7 +732,7 @@ c. Which country consumes the most beverages? [2]
 ```{r}
 most_consume <- consumer.countries$Var1[match(max(consumer.countries$Freq), consumer.countries$Freq)]
 
-print(paste("The country that consumes the most beverage is : ", highest_spending))
+print(paste("The country that consumes the most beverage is : ", most_consume))
 ```
 
 
@@ -618,7 +744,7 @@ consumer.countries$avg_profit <- c(0)
 for(i in 1:NROW(consumer.countries$Var1)){
   country_name = toString(consumer.countries$Var1[i])
   part_data = subset(data.consumer.bev, data.consumer.bev$Country==country_name)
-  consumer.countries$avg_profit[i] <- mean(as.numeric(part_data$Total.Profit))
+  consumer.countries$avg_profit[i] <- mean(part_data$Total.Profit)
 }
 ```
 
@@ -638,7 +764,7 @@ e. What has been the total revenue from beverages for each year since 2014? [5]
 data.consumer.bev.yearOnly <- data.consumer.bev
 
 
-data.consumer.bev.yearOnly$Order.Date <- as.integer(format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), format = "%Y"))
+data.consumer.bev.yearOnly$Order.Date <- as.integer(format(data.consumer.bev$Order.Date, format = "%Y"))
 
 bev_yearly_rev <- table(data.consumer.bev.yearOnly$Order.Date)
 bev_yearly_rev <- as.data.frame(bev_yearly_rev)
@@ -654,29 +780,27 @@ data = subset(data.consumer.bev.yearOnly, data.consumer.bev.yearOnly$Order.Date=
 for(i in 1:NROW(bev_yearly_rev$Var1)){
   data = subset(data.consumer.bev.yearOnly, data.consumer.bev.yearOnly$Order.Date== bev_yearly_rev$Var1[i])
   
-  bev_yearly_rev$revenue[i] <- sum(as.numeric(data$Total.Revenue))
+  bev_yearly_rev$revenue[i] <- sum(data$Total.Revenue)
   
 }
 
 ```
 
 ```{r}
-bev_yearly_rev %>% ggplot(aes(x=Var1,y=revenue)) +geom_point() 
+bev_yearly_rev %>% ggplot(aes(x=Var1,y=revenue)) +geom_point()
 ```
 
 
 f. Plot a time series graph showing change in overall revenues from beverages for the last six months (in the dataset). [4]
 ```{r}
-earliest_date <- max(as.integer(format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), "%Y%m%d")),  na.rm = TRUE)
+earliest_date <- max(as.integer(format(data.consumer.bev$Order.Date, "%Y%m%d")))
 earliest_date <- as.Date(toString(earliest_date), "%Y%m%d")
 
 analysis_date <- earliest_date %m-% months(6)
 
-data.consumer.bev.filter <- filter(data.consumer.bev,(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") >= analysis_date ))
+data.consumer.bev.filter <- filter(data.consumer.bev,(data.consumer.bev$Order.Date >= analysis_date ))
 
-data.consumer.bev.filter$rOrder.Date <- as.Date(data.consumer.bev.filter$Order.Date,"%m/%d/%Y")
-
-data.consumer.bev.filter$Total.Revenue.num <- as.numeric(data.consumer.bev.filter$Total.Revenue)
+data.consumer.bev.filter$Total.Revenue.num <- data.consumer.bev.filter$Total.Revenue
 
 data_monthly_rev <- data.frame(date = c(as.Date("2014-12-31")), revenue = c(0,0,0,0,0,0))
 
@@ -685,19 +809,17 @@ data_monthly_rev <- data.frame(date = c(as.Date("2014-12-31")), revenue = c(0,0,
 for(i in 1:6){
   start_mth <- analysis_date %m+% months(i-1)
   end_mth <- analysis_date %m+% months(i)
-  fil_data <- filter(data.consumer.bev,(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") >= start_mth & as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y") < end_mth ))
-  avg_rev <- sum(as.integer(fil_data$Total.Revenue))
+  fil_data <- filter(data.consumer.bev,(data.consumer.bev$Order.Date >= start_mth & data.consumer.bev$Order.Date < end_mth ))
+  avg_rev <- sum(fil_data$Total.Revenue)
   data_monthly_rev$date[i] <- start_mth
   data_monthly_rev$revenue[i] <- avg_rev
 }
-data_monthly_rev
-
 
 ```
 
 ```{r}
 # The revenues for each day 
-plot(data.consumer.bev.filter$Total.Revenue.num~data.consumer.bev.filter$rOrder.Date,type="p", col="green")
+plot(data.consumer.bev.filter$Total.Revenue.num~data.consumer.bev.filter$Order.Date,type="p", col="green")
 
 # Total revenue per month
 plot(data_monthly_rev$revenue~data_monthly_rev$date,type="l", col="green")
@@ -742,7 +864,7 @@ if(beverages_unit_sold > overall_unit_sold_except_bev){
 i. In which season (Spring, Summer, Autumn, Winter) does persons spend the most on beverages? [6]
 ```{r}
 data.consumer.bev.m_n_d <- data.consumer.bev
-data.consumer.bev.m_n_d$m_n_d <- format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), "%m%d")
+data.consumer.bev.m_n_d$m_n_d <- format(data.consumer.bev$Order.Date, "%m%d")
 
 spring_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "0301" & data.consumer.bev.m_n_d$m_n_d<="0531")
 
@@ -750,7 +872,7 @@ summer_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "0601"
 
 autumn_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "0901" & data.consumer.bev.m_n_d$m_n_d<="1130")
 
-winter_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "1201" & data.consumer.bev.m_n_d$m_n_d<="0229")
+winter_data <- filter(data.consumer.bev,  (data.consumer.bev.m_n_d$m_n_d>= "1201" & data.consumer.bev.m_n_d$m_n_d<= "1231") | ( data.consumer.bev.m_n_d$m_n_d>="0101" & data.consumer.bev.m_n_d$m_n_d<="0229"))
 
 spring.spend <- sum(as.numeric(spring_data$Total.Cost))
 summer.spend <- sum(as.numeric(summer_data$Total.Cost))
@@ -770,25 +892,55 @@ print(paste("The season when people spend the most on beverages is : ", most_pro
 
 
 j. Is there a correlation between the season and the units sold for beverages? Explain the result. [5]
+
+The graph and the correlation details below is able to show us how the two variables poorly correlates. 
+The seasons drastically causes the number of units sold to change creating large gaps between each season.
+The cor test show us that they correlates by only 0.8% which is very low and very high chance of recieveing an
+incorrect prediction of 45.3%. Therefore, from the analysis it can be said that the two variable does not correlates
+sttistically.
+
 ```{r}
 seasons <- c("Spring", "Summer", "Autumn", "Winter")
 
 season_cor_unit <- data.frame(seasons)
 season_cor_unit$units_sold <- c(0)
 
-season_cor_unit$units_sold[1] <- sum(as.numeric(spring_data$Units.Sold))
-season_cor_unit$units_sold[2] <- sum(as.numeric(summer_data$Units.Sold))
-season_cor_unit$units_sold[3] <- sum(as.numeric(autumn_data$Units.Sold))
-season_cor_unit$units_sold[4] <- sum(as.numeric(winter_data$Units.Sold))
+season_cor_unit$units_sold[1] <- sum(spring_data$Units.Sold)
+season_cor_unit$units_sold[2] <- sum(summer_data$Units.Sold)
+season_cor_unit$units_sold[3] <- sum(autumn_data$Units.Sold)
+season_cor_unit$units_sold[4] <- sum(winter_data$Units.Sold)
 
+# add season to each row
+data.consumer.bev.m_n_d$season <- c(0)
 
-
-
+data.consumer.bev.m_n_d$m_n_d <- na.omit(data.consumer.bev.m_n_d$m_n_d)
+for(i in 1:NROW(data.consumer.bev.m_n_d$season)){
+  
+  if(data.consumer.bev.m_n_d$m_n_d[i]>= "0301" & data.consumer.bev.m_n_d$m_n_d[i]<="0531"){
+    data.consumer.bev.m_n_d$season[i] <- as.numeric(1)
+    
+  }else if(data.consumer.bev.m_n_d$m_n_d[i]>= "0601" & data.consumer.bev.m_n_d$m_n_d[i]<="0831"){
+    data.consumer.bev.m_n_d$season[i] <-  as.numeric(2)
+    
+  }else if(data.consumer.bev.m_n_d$m_n_d[i]>= "0901" & data.consumer.bev.m_n_d$m_n_d[i]<="1130"){
+    data.consumer.bev.m_n_d$season[i] <-  as.numeric(3)
+    
+  }else{
+    data.consumer.bev.m_n_d$season[i] <-  as.numeric(4)
+  }
+}
 
 ```
 ```{r}
 plot(season_cor_unit$units_sold~season_cor_unit$seasons,type="l", col="green")
 ```
+```{r}
+#The correlation test
+# 1 represents Spring , 2 Summer, 3 Auntumn, 4 Winter
+cor.test(data.consumer.bev.m_n_d$Units.Sold, data.consumer.bev.m_n_d$season)
+
+```
+
 
 
 
@@ -796,12 +948,46 @@ plot(season_cor_unit$units_sold~season_cor_unit$seasons,type="l", col="green")
 
 a. Based on your analysis of both the tweet data and structured data, what would you recommend to Hard Knocks and why?
 
+I would recommend that hard knocks do open their next franchise because they have have positive sentiments based on the both datasets used.
+In order for Hard Knocks  to maximize profits, based on the tweet data, focus on Atlanta GA, United States, London England and Chicago IL because they were the locations with the most positive tweets fo Beer, Beverage, Party and Concert respectively. Additionally, they should seek to understand why New York, Ny has a dominant emotion of angry and come up with a solution as to how to deal with it. 
+In relation to the structured data, focus on Afghanistan, Albina, Algeria,Andorra because they spend the highest on beverages.
 
 
 
 ## 5. BONUS – 10 marks
 
 a. Which features in the dataset can be used to predict the units sold for beverages?
+
+The results below shows that neither the Region nor the order priority can be used to predict
+the number of units sold. However, the best of the two predictors is the Region that the order was made.
+This predictor shows 28.86% failure rate. This value is very high and is far above the optimal case. In addition,
+it correlates with the number of units sold by 1%. It is a poor predictor but the best of the two.
+
+```{r}
+OrderPriorities <- count(data.consumer.bev.m_n_d,Order.Priority)
+
+data.consumer.bev.m_n_d$Order.Priority.num <- c(0)
+
+
+for(i in 1:NROW(data.consumer.bev.m_n_d$Order.Priority)){
+  data.consumer.bev.m_n_d$Order.Priority.num[i] <- as.numeric(match(data.consumer.bev.m_n_d$Order.Priority[i], OrderPriorities$Order.Priority))
+}
+
+country_count <- count(data.consumer.bev.m_n_d, Region)
+
+data.consumer.bev.m_n_d$Country.num <- c(0)
+
+
+for(i in 1:NROW(data.consumer.bev.m_n_d$Region)){
+  data.consumer.bev.m_n_d$Country.num[i] <- as.numeric(match(data.consumer.bev.m_n_d$Region[i], country_count$Region))
+}
+
+cor.test(data.consumer.bev.m_n_d$Units.Sold, data.consumer.bev.m_n_d$Country.num)
+
+cor.test(data.consumer.bev.m_n_d$Units.Sold, data.consumer.bev.m_n_d$Order.Priority.num)
+
+```
+
 
 
 
