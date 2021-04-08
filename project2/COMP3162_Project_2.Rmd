@@ -710,29 +710,86 @@ plot(data_monthly_rev$revenue~data_monthly_rev$date,type="l", col="green")
 
 g. What is the dominant sales channel for beverages?[2]
 ```{r}
+sales_channels <- table(data.consumer.bev$Sales.Channel)
+sales_channels <- as.data.frame(sales_channels)
+dominantChannel <- sales_channels$Var1[match(max(sales_channels$Freq), sales_channels$Freq)]
 
+```
+```{r, echo=FALSE}
+print(paste("The most dominant sales channel is : ", dominantChannel))
 ```
 
 
 
 h. Determine whether beverages units sold is above the overall average for units sold for all other products. [3]
 ```{r}
+data.consumer.not.bev <- subset(data.consumer, data.consumer$X!="Beverages")
+beverages_unit_sold <- mean(data.consumer.bev$Units.Sold)
+overall_unit_sold_except_bev <- mean(data.consumer.not.bev$Units.Sold)
 
 ```
+```{r, echo=FALSE}
+if(beverages_unit_sold > overall_unit_sold_except_bev){
+  print(paste("Beverage units sold is greater than the other products with beverages at: ", beverages_unit_sold, " ,and the other products at: ", overall_unit_sold_except_bev))
+}else{
+    print(paste("Beverage units sold is less than the other products with beverages at: ", beverages_unit_sold, " ,and the other products at: ", overall_unit_sold_except_bev))
+}
+```
+
 
 
 
 i. In which season (Spring, Summer, Autumn, Winter) does persons spend the most on beverages? [6]
 ```{r}
+data.consumer.bev.m_n_d <- data.consumer.bev
+data.consumer.bev.m_n_d$m_n_d <- format(as.Date(data.consumer.bev$Order.Date, "%m/%d/%Y"), "%m%d")
 
+spring_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "0301" & data.consumer.bev.m_n_d$m_n_d<="0531")
+
+summer_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "0601" & data.consumer.bev.m_n_d$m_n_d<="0831")
+
+autumn_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "0901" & data.consumer.bev.m_n_d$m_n_d<="1130")
+
+winter_data <- filter(data.consumer.bev,  data.consumer.bev.m_n_d$m_n_d>= "1201" & data.consumer.bev.m_n_d$m_n_d<="0229")
+
+spring.spend <- sum(as.numeric(spring_data$Total.Cost))
+summer.spend <- sum(as.numeric(summer_data$Total.Cost))
+autumn.spend <- sum(as.numeric(autumn_data$Total.Cost))
+winter.spend <- sum(as.numeric(winter_data$Total.Cost))
+
+seasons_spend <- data.frame(spring.spend, summer.spend, autumn.spend, winter.spend)
+
+most_prod_mth <- names(seasons_spend[match(max(seasons_spend),seasons_spend)])
 ```
+```{r, echo=FALSE}
+print(paste("The season when people spend the most on beverages is : ", most_prod_mth))
+```
+
+
 
 
 
 j. Is there a correlation between the season and the units sold for beverages? Explain the result. [5]
 ```{r}
+seasons <- c("Spring", "Summer", "Autumn", "Winter")
+
+season_cor_unit <- data.frame(seasons)
+season_cor_unit$units_sold <- c(0)
+
+season_cor_unit$units_sold[1] <- sum(as.numeric(spring_data$Units.Sold))
+season_cor_unit$units_sold[2] <- sum(as.numeric(summer_data$Units.Sold))
+season_cor_unit$units_sold[3] <- sum(as.numeric(autumn_data$Units.Sold))
+season_cor_unit$units_sold[4] <- sum(as.numeric(winter_data$Units.Sold))
+
+
+
+
 
 ```
+```{r}
+plot(season_cor_unit$units_sold~season_cor_unit$seasons,type="l", col="green")
+```
+
 
 
 ## 4. Recommendation:
